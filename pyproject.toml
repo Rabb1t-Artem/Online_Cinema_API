@@ -1,9 +1,9 @@
 [project]
-name = "poetry"
+name = "src"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Your Name",email = "you@example.com"}
+    {name = "Rabb1t-Artem",email = "79219648+Rabb1t-Artem@users.noreply.github.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
