@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
 class GenreSchema(BaseModel):
     id: int
     name: str
