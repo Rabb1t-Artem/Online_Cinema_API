@@ -1,12 +1,13 @@
 import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import String, Float, Text, DECIMAL, UniqueConstraint, Date, ForeignKey, Table, Column
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from sqlalchemy import Enum as SQLAlchemyEnum
 
 from database import Base
+from database.models.orders import OrderItemModel
 
 
 class MovieStatusEnum(str, Enum):
@@ -122,6 +123,7 @@ class MovieModel(Base):
 
     country_id: Mapped[int] = mapped_column(ForeignKey("countries.id"), nullable=False)
     country: Mapped["CountryModel"] = relationship("CountryModel", back_populates="movies")
+    order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
     genres: Mapped[list["GenreModel"]] = relationship(
         "GenreModel",
