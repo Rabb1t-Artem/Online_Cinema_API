@@ -1,10 +1,14 @@
+
+import datetime
+from enum import Enum
+from typing import Optional, List
 import uuid
-from typing import Optional
 
 from sqlalchemy import String, Float, Text, DECIMAL, UniqueConstraint, ForeignKey, Table, Column, Integer
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from database import Base
+from database.models.orders import OrderItemModel
 
 
 MoviesGenresModel = Table(
@@ -134,6 +138,12 @@ class MovieModel(Base):
         "CertificationModel",
         back_populates="movies",
     )
+    budget: Mapped[float] = mapped_column(DECIMAL(15, 2), nullable=False)
+    revenue: Mapped[float] = mapped_column(Float, nullable=False)
+
+    country_id: Mapped[int] = mapped_column(ForeignKey("countries.id"), nullable=False)
+    country: Mapped["CountryModel"] = relationship("CountryModel", back_populates="movies")
+    order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
     genres: Mapped[list["GenreModel"]] = relationship(
         "GenreModel",
