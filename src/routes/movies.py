@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from database import (
-    get_db,
+from database import get_db
+from database.models.movies import (
     MovieModel,
-    CountryModel,
     GenreModel,
-    ActorModel,
-    LanguageModel
+    DirectorModel,
+    CertificationModel,
+    StarModel,
 )
 from schemas import (
     MovieListResponseSchema,
@@ -49,30 +49,10 @@ def get_movie_list(
 ) -> MovieListResponseSchema:
     """
     Fetch a paginated list of movies from the database.
-
-    This function retrieves a paginated list of movies, allowing the client to specify
-    the page number and the number of items per page. It calculates the total pages
-    and provides links to the previous and next pages when applicable.
-
-    :param page: The page number to retrieve (1-based index, must be >= 1).
-    :type page: int
-    :param per_page: The number of items to display per page (must be between 1 and 20).
-    :type per_page: int
-    :param db: The SQLAlchemy database session (provided via dependency injection).
-    :type db: Session
-
-    :return: A response containing the paginated list of movies and metadata.
-    :rtype: MovieListResponseSchema
-
-    :raises HTTPException: Raises a 404 error if no movies are found for the requested page.
     """
     offset = (page - 1) * per_page
 
-    query = db.query(MovieModel).order_by()
-
-    order_by = MovieModel.default_order_by()
-    if order_by:
-        query = query.order_by(*order_by)
+    query = db.query(MovieModel).order_by(MovieModel.year.desc())
 
     total_items = query.count()
     movies = query.offset(offset).limit(per_page).all()
@@ -103,9 +83,8 @@ def get_movie_list(
     summary="Add a new movie",
     description=(
             "<h3>This endpoint allows clients to add a new movie to the database. "
-            "It accepts details such as name, date, genres, actors, languages, and "
-            "other attributes. The associated country, genres, actors, and languages "
-            "will be created or linked automatically.</h3>"
+            "It accepts details such as name, year, time, genres, stars, director, certification, and other attributes. "
+            "The associated genres, stars, director, and certification will be created or linked automatically.</h3>"
     ),
     responses={
         201: {
@@ -128,37 +107,29 @@ def create_movie(
 ) -> MovieDetailSchema:
     """
     Add a new movie to the database.
-
-    This endpoint allows the creation of a new movie with details such as
-    name, release date, genres, actors, and languages. It automatically
-    handles linking or creating related entities.
-
-    :param movie_data: The data required to create a new movie.
-    :type movie_data: MovieCreateSchema
-    :param db: The SQLAlchemy database session (provided via dependency injection).
-    :type db: Session
-
-    :return: The created movie with all details.
-    :rtype: MovieDetailSchema
-
-    :raises HTTPException: Raises a 400 error for invalid input.
     """
     existing_movie = db.query(MovieModel).filter(
         MovieModel.name == movie_data.name,
-        MovieModel.date == movie_data.date
+        MovieModel.year == movie_data.year
     ).first()
 
     if existing_movie:
         raise HTTPException(
             status_code=409,
-            detail=f"A movie with the name '{movie_data.name}' and release date '{movie_data.date}' already exists."
+            detail=f"A movie with the name '{movie_data.name}' and year '{movie_data.year}' already exists."
         )
 
     try:
-        country = db.query(CountryModel).filter_by(code=movie_data.country).first()
-        if not country:
-            country = CountryModel(code=movie_data.country)
-            db.add(country)
+        director = db.query(DirectorModel).filter_by(name=movie_data.director.name).first()
+        if not director:
+            director = DirectorModel(name=movie_data.director.name)
+            db.add(director)
+            db.flush()
+
+        certification = db.query(CertificationModel).filter_by(name=movie_data.certification.name).first()
+        if not certification:
+            certification = CertificationModel(name=movie_data.certification.name)
+            db.add(certification)
             db.flush()
 
         genres = []
@@ -170,36 +141,29 @@ def create_movie(
                 db.flush()
             genres.append(genre)
 
-        actors = []
-        for actor_name in movie_data.actors:
-            actor = db.query(ActorModel).filter_by(name=actor_name).first()
-            if not actor:
-                actor = ActorModel(name=actor_name)
-                db.add(actor)
+        stars = []
+        for star_name in movie_data.stars:
+            star = db.query(StarModel).filter_by(name=star_name).first()
+            if not star:
+                star = StarModel(name=star_name)
+                db.add(star)
                 db.flush()
-            actors.append(actor)
-
-        languages = []
-        for language_name in movie_data.languages:
-            language = db.query(LanguageModel).filter_by(name=language_name).first()
-            if not language:
-                language = LanguageModel(name=language_name)
-                db.add(language)
-                db.flush()
-            languages.append(language)
+            stars.append(star)
 
         movie = MovieModel(
             name=movie_data.name,
-            date=movie_data.date,
-            score=movie_data.score,
-            overview=movie_data.overview,
-            status=movie_data.status,
-            budget=movie_data.budget,
-            revenue=movie_data.revenue,
-            country=country,
+            year=movie_data.year,
+            time=movie_data.time,
+            imdb=movie_data.imdb,
+            votes=movie_data.votes,
+            meta_score=movie_data.meta_score,
+            gross=movie_data.gross,
+            description=movie_data.description,
+            price=movie_data.price,
+            director=director,
+            certification=certification,
             genres=genres,
-            actors=actors,
-            languages=languages,
+            stars=stars
         )
         db.add(movie)
         db.commit()
@@ -218,8 +182,8 @@ def create_movie(
     description=(
             "<h3>Fetch detailed information about a specific movie by its unique ID. "
             "This endpoint retrieves all available details for the movie, such as "
-            "its name, genre, crew, budget, and revenue. If the movie with the given "
-            "ID is not found, a 404 error will be returned.</h3>"
+            "its name, genre, director, stars, certification, and other attributes. "
+            "If the movie with the given ID is not found, a 404 error will be returned.</h3>"
     ),
     responses={
         404: {
@@ -238,27 +202,14 @@ def get_movie_by_id(
 ) -> MovieDetailSchema:
     """
     Retrieve detailed information about a specific movie by its ID.
-
-    This function fetches detailed information about a movie identified by its unique ID.
-    If the movie does not exist, a 404 error is returned.
-
-    :param movie_id: The unique identifier of the movie to retrieve.
-    :type movie_id: int
-    :param db: The SQLAlchemy database session (provided via dependency injection).
-    :type db: Session
-
-    :return: The details of the requested movie.
-    :rtype: MovieDetailResponseSchema
-
-    :raises HTTPException: Raises a 404 error if the movie with the given ID is not found.
     """
     movie = (
         db.query(MovieModel)
         .options(
-            joinedload(MovieModel.country),
+            joinedload(MovieModel.director),
+            joinedload(MovieModel.certification),
             joinedload(MovieModel.genres),
-            joinedload(MovieModel.actors),
-            joinedload(MovieModel.languages),
+            joinedload(MovieModel.stars),
         )
         .filter(MovieModel.id == movie_id)
         .first()
@@ -302,19 +253,6 @@ def delete_movie(
 ):
     """
     Delete a specific movie by its ID.
-
-    This function deletes a movie identified by its unique ID.
-    If the movie does not exist, a 404 error is raised.
-
-    :param movie_id: The unique identifier of the movie to delete.
-    :type movie_id: int
-    :param db: The SQLAlchemy database session (provided via dependency injection).
-    :type db: Session
-
-    :raises HTTPException: Raises a 404 error if the movie with the given ID is not found.
-
-    :return: A response indicating the successful deletion of the movie.
-    :rtype: None
     """
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
 
@@ -363,37 +301,19 @@ def update_movie(
 ):
     """
     Update a specific movie by its ID.
-
-    This function updates a movie identified by its unique ID.
-    If the movie does not exist, a 404 error is raised.
-
-    :param movie_id: The unique identifier of the movie to update.
-    :type movie_id: int
-    :param movie_data: The updated data for the movie.
-    :type movie_data: MovieUpdateSchema
-    :param db: The SQLAlchemy database session (provided via dependency injection).
-    :type db: Session
-
-    :raises HTTPException: Raises a 404 error if the movie with the given ID is not found.
-
-    :return: A response indicating the successful update of the movie.
-    :rtype: None
     """
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+
     if not movie:
         raise HTTPException(
             status_code=404,
             detail="Movie with the given ID was not found."
         )
 
-    for field, value in movie_data.model_dump(exclude_unset=True).items():
-        setattr(movie, field, value)
+    for key, value in movie_data.dict(exclude_unset=True).items():
+        setattr(movie, key, value)
 
-    try:
-        db.commit()
-        db.refresh(movie)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=400, detail="Invalid input data.")
-    else:
-        return {"detail": "Movie updated successfully."}
+    db.commit()
+    db.refresh(movie)
+
+    return MovieDetailSchema.model_validate(movie)
