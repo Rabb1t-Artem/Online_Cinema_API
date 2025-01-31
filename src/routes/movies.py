@@ -83,8 +83,10 @@ def get_movie_list(
     summary="Add a new movie",
     description=(
             "<h3>This endpoint allows clients to add a new movie to the database. "
-            "It accepts details such as name, year, time, genres, stars, director, certification, and other attributes. "
-            "The associated genres, stars, director, and certification will be created or linked automatically.</h3>"
+            "It accepts details such as name, year, time, genres, "
+            "stars, director, certification, and other attributes. "
+            "The associated genres, stars, director, "
+            "and certification will be created or linked automatically.</h3>"
     ),
     responses={
         201: {
