@@ -7,7 +7,7 @@ on:
       - "dev"
 
 jobs:
-  test-accounts:
+  test-pep8:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
