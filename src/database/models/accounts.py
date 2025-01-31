@@ -22,6 +22,7 @@ from sqlalchemy.orm import (
 )
 
 from database import Base
+from database.models.carts import CartModel
 from database.models.orders import OrderModel
 from database.validators import accounts as validators
 from security.passwords import hash_password, verify_password
@@ -68,6 +69,12 @@ class UserModel(Base):
     group_id: Mapped[int] = mapped_column(ForeignKey("user_groups.id", ondelete="CASCADE"), nullable=False)
     group: Mapped["UserGroupModel"] = relationship("UserGroupModel", back_populates="users")
     orders: Mapped[List["OrderModel"]] = relationship("OrderModel", back_populates="user")
+
+    cart: Mapped["CartModel"] = relationship(
+        "CartModel",
+        back_populates="user",
+        uselist=False
+    )
 
     activation_token: Mapped[Optional["ActivationTokenModel"]] = relationship(
         "ActivationTokenModel",
