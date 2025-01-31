@@ -3,26 +3,11 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field, field_validator
 
-
-class StarSchema(BaseModel):
-    id: int
-    name: str
-
-    model_config = {
-        "from_attributes": True,
-    }
+from schemas.genres import GenreSchema
+from schemas.stars import StarSchema
 
 
 class DirectorSchema(BaseModel):
-    id: int
-    name: str
-
-    model_config = {
-        "from_attributes": True,
-    }
-
-
-class GenreSchema(BaseModel):
     id: int
     name: str
 
