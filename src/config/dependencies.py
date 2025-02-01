@@ -1,12 +1,19 @@
 import os
 
-from fastapi import Depends
+from sqlalchemy import Session
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
 from config.settings import TestingSettings, Settings, BaseAppSettings
 from notifications import EmailSenderInterface, EmailSender
 from security.interfaces import JWTAuthManagerInterface
 from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
+from database.models.accounts import UserModel
+from database import get_db
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
 
 def get_settings() -> BaseAppSettings:
@@ -52,3 +59,27 @@ def get_s3_storage_client(
         secret_key=settings.S3_STORAGE_SECRET_KEY,
         bucket_name=settings.S3_BUCKET_NAME,
     )
+
+
+def get_current_user(
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme), settings: Settings = Depends()
+) -> UserModel | None:
+    try:
+        payload = JWTAuthManager(
+            secret_key_access=settings.SECRET_KEY_ACCESS,
+            secret_key_refresh=settings.SECRET_KEY_REFRESH,
+            algorithm=settings.JWT_SIGNING_ALGORITHM,
+        ).decode_access_token(token)
+
+        user_id = payload.get("user_id")
+        if user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+
+        user = db.query(UserModel).filter(UserModel.id == user_id).first()
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+        return user
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Could not validate token: {str(e)}")
