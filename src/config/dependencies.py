@@ -1,6 +1,7 @@
 import os
 
-from sqlalchemy import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -61,8 +62,8 @@ def get_s3_storage_client(
     )
 
 
-def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme), settings: Settings = Depends()
+async def get_current_user(
+    db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), settings: Settings = Depends()
 ) -> UserModel | None:
     try:
         payload = JWTAuthManager(
@@ -75,7 +76,9 @@ def get_current_user(
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
-        user = db.query(UserModel).filter(UserModel.id == user_id).first()
+        result = await db.execute(select(UserModel).filter(UserModel.id == user_id))
+        user = result.scalars().first()
+
         if user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
