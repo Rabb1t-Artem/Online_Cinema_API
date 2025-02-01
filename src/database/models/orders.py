@@ -20,9 +20,9 @@ class OrderModel(Base):
 
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="orders")
     items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="order")
-    payments: Mapped[List["PaymentModel"]] = relationship("PaymentModel",
-                                                          back_populates="order",
-                                                          cascade="all, delete-orphan")
+    payments: Mapped[List["PaymentModel"]] = relationship(
+        "PaymentModel", back_populates="order", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return (
@@ -44,7 +44,6 @@ class OrderItemModel(Base):
     order: Mapped["OrderModel"] = relationship("OrderModel", back_populates="items")
     movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="order_items")
     payment_items: Mapped[List["PaymentItemModel"]] = relationship("PaymentItemModel", back_populates="order_item")
-
 
     def __repr__(self):
         return (

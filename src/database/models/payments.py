@@ -29,10 +29,12 @@ class PaymentItemModel(Base):
     order_item: Mapped["OrderItemModel"] = relationship("OrderItemModel", back_populates="payment_items")
 
     def __repr__(self):
-        return (f"<PaymentItemModel(id={self.id}, "
-                f"payment_id={self.payment_id}, "
-                f"order_item_id={self.order_item_id}, "
-                f"price_at_payment={self.price_at_payment})>")
+        return (
+            f"<PaymentItemModel(id={self.id}, "
+            f"payment_id={self.payment_id}, "
+            f"order_item_id={self.order_item_id}, "
+            f"price_at_payment={self.price_at_payment})>"
+        )
 
 
 class PaymentModel(Base):
@@ -42,10 +44,11 @@ class PaymentModel(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     order_id: Mapped[int] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.successful)
+    status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus), nullable=False, default=PaymentStatus.successful
+    )
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     external_payment_id: Mapped[str] = mapped_column(String(255), nullable=True)
-
 
     order: Mapped["OrderModel"] = relationship("OrderModel", back_populates="payments")
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="payments")

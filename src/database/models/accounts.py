@@ -67,9 +67,9 @@ class UserModel(Base):
     group_id: Mapped[int] = mapped_column(ForeignKey("user_groups.id", ondelete="CASCADE"), nullable=False)
     group: Mapped["UserGroupModel"] = relationship("UserGroupModel", back_populates="users")
     orders: Mapped[List["OrderModel"]] = relationship("OrderModel", back_populates="user")
-    payments: Mapped[List["PaymentModel"]] = relationship("PaymentModel",
-                                                          back_populates="user",
-                                                          cascade="all, delete-orphan")
+    payments: Mapped[List["PaymentModel"]] = relationship(
+        "PaymentModel", back_populates="user", cascade="all, delete-orphan"
+    )
 
     cart: Mapped["CartModel"] = relationship("CartModel", back_populates="user", uselist=False)
 

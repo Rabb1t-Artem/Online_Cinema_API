@@ -81,7 +81,7 @@ async def register_user(
     If a user with the same email already exists, an HTTP 409 error is raised.
     In case of any unexpected issues during the creation process, an HTTP 500 error is returned.
     """
-    
+
     result = await db.execute(select(UserModel).where(UserModel.email == user_data.email))
     existing_user = result.scalar_one_or_none()
 
