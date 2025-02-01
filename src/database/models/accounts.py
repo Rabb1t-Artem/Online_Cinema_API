@@ -20,6 +20,7 @@ from database import Base
 from database.models.carts import CartModel
 from database.models.movies import NotificationModel, CommentLikeModel, MovieLikeModel
 from database.models.orders import OrderModel
+from database.models.payments import PaymentModel
 from database.validators import accounts as validators
 from security.passwords import hash_password, verify_password
 from security.utils import generate_secure_token
@@ -66,6 +67,9 @@ class UserModel(Base):
     group_id: Mapped[int] = mapped_column(ForeignKey("user_groups.id", ondelete="CASCADE"), nullable=False)
     group: Mapped["UserGroupModel"] = relationship("UserGroupModel", back_populates="users")
     orders: Mapped[List["OrderModel"]] = relationship("OrderModel", back_populates="user")
+    payments: Mapped[List["PaymentModel"]] = relationship(
+        "PaymentModel", back_populates="user", cascade="all, delete-orphan"
+    )
 
     cart: Mapped["CartModel"] = relationship("CartModel", back_populates="user", uselist=False)
 
