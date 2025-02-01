@@ -18,6 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database import Base
 from database.models.carts import CartModel
+from database.models.movies import NotificationModel, CommentLikeModel
 from database.models.orders import OrderModel
 from database.validators import accounts as validators
 from security.passwords import hash_password, verify_password
@@ -102,6 +103,12 @@ class UserModel(Base):
 
     movie_likes: Mapped[List["MovieLikeModel"]] = relationship(
         "MovieLikeModel", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    notifications: Mapped[List["NotificationModel"]] = relationship("NotificationModel", back_populates="user",
+                                                                    cascade="all, delete-orphan")
+    comment_likes: Mapped[List["CommentLikeModel"]] = relationship(
+        "CommentLikeModel", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self):
