@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
+from starlette import status
 
 from database import get_db
 from database.models.movies import (
@@ -20,6 +21,7 @@ from schemas import (
     MovieUpdateSchema
 )
 from schemas.movies import MovieLikeSchema, MovieCommentCreateSchema, MovieCommentSchema
+
 
 router = APIRouter()
 
@@ -43,7 +45,8 @@ router = APIRouter()
                 }
             },
         }
-    }
+    },
+    tags=["Movies", "All"]
 )
 def get_movie_list(
         page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -104,7 +107,8 @@ def get_movie_list(
             },
         }
     },
-    status_code=201
+    status_code=status.HTTP_201_CREATED,
+    tags=["Movies", "Create"]
 )
 def create_movie(
         movie_data: MovieCreateSchema,
@@ -199,7 +203,8 @@ def create_movie(
                 }
             },
         }
-    }
+    },
+    tags=["Movies", "ID_search"]
 )
 def get_movie_by_id(
         movie_id: int,
@@ -250,7 +255,8 @@ def get_movie_by_id(
             },
         },
     },
-    status_code=204
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Movies", "Delete"],
 )
 def delete_movie(
     movie_id: int,
@@ -297,7 +303,8 @@ def delete_movie(
                 }
             },
         },
-    }
+    },
+    tags=["Movies", "Update"],
 )
 def update_movie(
     movie_id: int,
