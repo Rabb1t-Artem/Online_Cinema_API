@@ -1,11 +1,13 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
 from starlette import status
 
-from database import get_db
+from database import get_db, UserModel
 from database.models.movies import (
     MovieModel,
     GenreModel,
@@ -15,8 +17,9 @@ from database.models.movies import (
     MovieLikeModel,
     MovieCommentModel,
     FavoriteMovieModel,
-    MovieRatingModel,
+    MovieRatingModel, NotificationModel, CommentLikeModel,
 )
+from database.models.orders import OrderItemModel
 from schemas import (
     MovieListResponseSchema,
     MovieListItemSchema,
@@ -29,7 +32,7 @@ from schemas.movies import (
     MovieCommentCreateSchema,
     MovieCommentSchema,
     FavoriteMovieListSchema,
-    FavoriteMovieResponseSchema,
+    FavoriteMovieResponseSchema, NotificationSchema,
 )
 
 router = APIRouter()
@@ -271,18 +274,24 @@ def get_movie_by_id(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Movies", "Delete"],
 )
+@router.delete("/movies/{movie_id}/", summary="Delete a movie by ID")
 def delete_movie(
-    movie_id: int,
-    db: Session = Depends(get_db),
+        movie_id: int,
+        db: Session = Depends(get_db),
 ):
     """
     Delete a specific movie by its ID.
+    Prevent deletion if at least one order item (purchase) exists for the movie.
     """
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
-
     if not movie:
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
+
+    order_items_count = db.query(OrderItemModel).filter(OrderItemModel.movie_id == movie_id).count()
+    if order_items_count > 0:
         raise HTTPException(
-            status_code=404, detail="Movie with the given ID was not found."
+            status_code=400,
+            detail="Cannot delete movie, it has been purchased by at least one user."
         )
 
     db.delete(movie)
@@ -615,3 +624,113 @@ def get_movie_rating(movie_id: int, db: Session = Depends(get_db)):
         return {"message": "No ratings yet for this movie."}
 
     return {"average_rating": average_rating}
+
+
+async def create_notification(db: AsyncSession, user_id: int, message: str) -> NotificationModel:
+    notification = NotificationModel(user_id=user_id, message=message)
+    db.add(notification)
+    await db.commit()
+    await db.refresh(notification)
+    return notification
+
+
+@router.post(
+    "/movies/comments/{comment_id}/reply/",
+    summary="Reply to a comment",
+    tags=["Comments", "Notifications"],
+)
+async def reply_to_comment(
+    comment_id: int,
+    content: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Add a reply to a comment and notify the original comment's author.
+    """
+
+    result = await db.execute(select(MovieCommentModel).filter(MovieCommentModel.id == comment_id))
+    parent_comment = result.scalars().first()
+    if not parent_comment:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+
+    reply = MovieCommentModel(
+        content=content,
+        movie_id=parent_comment.movie_id,
+        user_id=current_user.id,
+        parent_id=comment_id,
+    )
+    db.add(reply)
+    await db.commit()
+    await db.refresh(reply)
+
+    if parent_comment.user_id != current_user.id:
+        await create_notification(
+            db,
+            user_id=parent_comment.user_id,
+            message="Your comment has received a reply."
+        )
+
+    return {"message": "Reply added successfully."}
+
+
+@router.post(
+    "/movies/comments/{comment_id}/like/",
+    summary="Like a comment",
+    tags=["Comments", "Notifications"],
+)
+async def like_comment(
+    comment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Like a comment and notify the comment's author.
+    """
+    result = await db.execute(select(MovieCommentModel).filter(MovieCommentModel.id == comment_id))
+    comment = result.scalars().first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+
+    result = await db.execute(
+        select(CommentLikeModel).filter(
+            CommentLikeModel.comment_id == comment_id,
+            CommentLikeModel.user_id == current_user.id
+        )
+    )
+    existing_like = result.scalars().first()
+    if existing_like:
+        raise HTTPException(status_code=400, detail="You have already liked this comment.")
+
+    new_like = CommentLikeModel(comment_id=comment_id, user_id=current_user.id)
+    db.add(new_like)
+    await db.commit()
+
+    if comment.user_id != current_user.id:
+        await create_notification(
+            db,
+            user_id=comment.user_id,
+            message="Your comment has received a like."
+        )
+
+    return {"message": "Comment liked successfully."}
+
+
+@router.get(
+    "/notifications/",
+    summary="Get notifications for the current user",
+    response_model=List[NotificationSchema],
+    tags=["Notifications"],
+)
+async def get_notifications(
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Retrieve all notifications for the current user.
+    """
+    result = await db.execute(select(NotificationModel).filter(NotificationModel.user_id == current_user.id))
+    notifications = result.scalars().all()
+    if not notifications:
+        raise HTTPException(status_code=404, detail="No notifications found.")
+    return notifications

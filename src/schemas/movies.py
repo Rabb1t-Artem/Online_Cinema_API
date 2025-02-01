@@ -164,3 +164,15 @@ class FavoriteMovieListSchema(BaseModel):
     model_config = {
         "from_attributes": True,
     }
+
+
+class NotificationSchema(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {
+        "from_attributes": True,
+    }

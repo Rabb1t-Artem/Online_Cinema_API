@@ -245,6 +245,10 @@ class MovieCommentModel(Base):
     movie = relationship("MovieModel", back_populates="comments")
     user = relationship("UserModel", back_populates="comments")
 
+    likes: Mapped[List["CommentLikeModel"]] = relationship(
+        "CommentLikeModel", back_populates="comment", cascade="all, delete-orphan"
+    )
+
 
 class FavoriteMovieModel(Base):
     __tablename__ = "favorite_movies"
@@ -276,3 +280,41 @@ class MovieRatingModel(Base):
             "movie_id", "user_id", name="unique_movie_user_rating_constraint"
         ),
     )
+
+
+class NotificationModel(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=datetime.UTC, nullable=False)
+
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="notifications")
+
+    def __repr__(self):
+        return f"<Notification(user_id={self.user_id}, message='{self.message}', is_read={self.is_read})>"
+
+
+class CommentLikeModel(Base):
+    __tablename__ = "comment_likes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    comment_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("movie_comments.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=datetime.UTC, nullable=False)
+
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="comment_likes")
+    comment: Mapped["MovieCommentModel"] = relationship("MovieCommentModel", back_populates="likes")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "comment_id", name="unique_user_comment_like"),
+    )
+
+    def __repr__(self):
+        return f"<CommentLike(user_id={self.user_id}, comment_id={self.comment_id})>"
