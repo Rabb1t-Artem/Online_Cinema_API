@@ -9,7 +9,6 @@ from fastapi import (
     BackgroundTasks,
 )
 from sqlalchemy.exc import SQLAlchemyError
-#from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
@@ -327,7 +326,7 @@ async def reset_password(
     Deletes the token after successful password reset.
     """
     result = await db.execute(
-        select(UserModel).where(UserModel.email==data.email)
+        select(UserModel).where(UserModel.email == data.email)
     )
     user = result.scalar_one_or_none()
 
