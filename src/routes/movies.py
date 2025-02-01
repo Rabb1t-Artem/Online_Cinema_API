@@ -18,7 +18,7 @@ from schemas import (
     MovieListItemSchema,
     MovieDetailSchema,
     MovieCreateSchema,
-    MovieUpdateSchema
+    MovieUpdateSchema,
 )
 from schemas.movies import MovieLikeSchema, MovieCommentCreateSchema, MovieCommentSchema, FavoriteMovieListSchema, FavoriteMovieResponseSchema
 
@@ -30,27 +30,23 @@ router = APIRouter()
     response_model=MovieListResponseSchema,
     summary="Get a paginated list of movies",
     description=(
-            "<h3>This endpoint retrieves a paginated list of movies from the database. "
-            "Clients can specify the `page` number and the number of items per page using `per_page`. "
-            "The response includes details about the movies, total pages, and total items, "
-            "along with links to the previous and next pages if applicable.</h3>"
+        "<h3>This endpoint retrieves a paginated list of movies from the database. "
+        "Clients can specify the `page` number and the number of items per page using `per_page`. "
+        "The response includes details about the movies, total pages, and total items, "
+        "along with links to the previous and next pages if applicable.</h3>"
     ),
     responses={
         404: {
             "description": "No movies found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "No movies found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "No movies found."}}},
         }
     },
     tags=["Movies", "All"]
 )
 def get_movie_list(
-        page: int = Query(1, ge=1, description="Page number (1-based index)"),
-        per_page: int = Query(10, ge=1, le=20, description="Number of items per page"),
-        db: Session = Depends(get_db),
+    page: int = Query(1, ge=1, description="Page number (1-based index)"),
+    per_page: int = Query(10, ge=1, le=20, description="Number of items per page"),
+    db: Session = Depends(get_db),
 ) -> MovieListResponseSchema:
     """
     Fetch a paginated list of movies from the database.
@@ -65,10 +61,7 @@ def get_movie_list(
     if not movies:
         raise HTTPException(status_code=404, detail="No movies found.")
 
-    movie_list = [
-        MovieListItemSchema.model_validate(movie)
-        for movie in movies
-    ]
+    movie_list = [MovieListItemSchema.model_validate(movie) for movie in movies]
 
     total_pages = (total_items + per_page - 1) // per_page
 
@@ -87,11 +80,11 @@ def get_movie_list(
     response_model=MovieDetailSchema,
     summary="Add a new movie",
     description=(
-            "<h3>This endpoint allows clients to add a new movie to the database. "
-            "It accepts details such as name, year, time, genres, "
-            "stars, director, certification, and other attributes. "
-            "The associated genres, stars, director, "
-            "and certification will be created or linked automatically.</h3>"
+        "<h3>This endpoint allows clients to add a new movie to the database. "
+        "It accepts details such as name, year, time, genres, "
+        "stars, director, certification, and other attributes. "
+        "The associated genres, stars, director, "
+        "and certification will be created or linked automatically.</h3>"
     ),
     responses={
         201: {
@@ -99,32 +92,24 @@ def get_movie_list(
         },
         400: {
             "description": "Invalid input.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Invalid input data."}
-                }
-            },
-        }
+            "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
+        },
     },
     status_code=status.HTTP_201_CREATED,
     tags=["Movies", "Create"]
 )
-def create_movie(
-        movie_data: MovieCreateSchema,
-        db: Session = Depends(get_db)
-) -> MovieDetailSchema:
+def create_movie(movie_data: MovieCreateSchema, db: Session = Depends(get_db)) -> MovieDetailSchema:
     """
     Add a new movie to the database.
     """
-    existing_movie = db.query(MovieModel).filter(
-        MovieModel.name == movie_data.name,
-        MovieModel.year == movie_data.year
-    ).first()
+    existing_movie = (
+        db.query(MovieModel).filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year).first()
+    )
 
     if existing_movie:
         raise HTTPException(
             status_code=409,
-            detail=f"A movie with the name '{movie_data.name}' and year '{movie_data.year}' already exists."
+            detail=f"A movie with the name '{movie_data.name}' and year '{movie_data.year}' already exists.",
         )
 
     try:
@@ -171,7 +156,7 @@ def create_movie(
             director=director,
             certification=certification,
             genres=genres,
-            stars=stars
+            stars=stars,
         )
         db.add(movie)
         db.commit()
@@ -188,26 +173,22 @@ def create_movie(
     response_model=MovieDetailSchema,
     summary="Get movie details by ID",
     description=(
-            "<h3>Fetch detailed information about a specific movie by its unique ID. "
-            "This endpoint retrieves all available details for the movie, such as "
-            "its name, genre, director, stars, certification, and other attributes. "
-            "If the movie with the given ID is not found, a 404 error will be returned.</h3>"
+        "<h3>Fetch detailed information about a specific movie by its unique ID. "
+        "This endpoint retrieves all available details for the movie, such as "
+        "its name, genre, director, stars, certification, and other attributes. "
+        "If the movie with the given ID is not found, a 404 error will be returned.</h3>"
     ),
     responses={
         404: {
             "description": "Movie not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         }
     },
     tags=["Movies", "ID_search"]
 )
 def get_movie_by_id(
-        movie_id: int,
-        db: Session = Depends(get_db),
+    movie_id: int,
+    db: Session = Depends(get_db),
 ) -> MovieDetailSchema:
     """
     Retrieve detailed information about a specific movie by its ID.
@@ -225,10 +206,7 @@ def get_movie_by_id(
     )
 
     if not movie:
-        raise HTTPException(
-            status_code=404,
-            detail="Movie with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
 
     return MovieDetailSchema.model_validate(movie)
 
@@ -242,16 +220,10 @@ def get_movie_by_id(
         "a 404 error will be returned.</p>"
     ),
     responses={
-        204: {
-            "description": "Movie deleted successfully."
-        },
+        204: {"description": "Movie deleted successfully."},
         404: {
             "description": "Movie not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
@@ -267,10 +239,7 @@ def delete_movie(
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
 
     if not movie:
-        raise HTTPException(
-            status_code=404,
-            detail="Movie with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
 
     db.delete(movie)
     db.commit()
@@ -288,19 +257,11 @@ def delete_movie(
     responses={
         200: {
             "description": "Movie updated successfully.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie updated successfully."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie updated successfully."}}},
         },
         404: {
             "description": "Movie not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         },
     },
     tags=["Movies", "Update"],
@@ -316,10 +277,7 @@ def update_movie(
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
 
     if not movie:
-        raise HTTPException(
-            status_code=404,
-            detail="Movie with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
 
     for key, value in movie_data.dict(exclude_unset=True).items():
         setattr(movie, key, value)
