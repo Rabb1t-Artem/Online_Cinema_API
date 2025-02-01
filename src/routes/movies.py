@@ -17,7 +17,9 @@ from database.models.movies import (
     MovieLikeModel,
     MovieCommentModel,
     FavoriteMovieModel,
-    MovieRatingModel, NotificationModel, CommentLikeModel,
+    MovieRatingModel,
+    NotificationModel,
+    CommentLikeModel,
 )
 from database.models.orders import OrderItemModel
 from schemas import (
@@ -32,7 +34,8 @@ from schemas.movies import (
     MovieCommentCreateSchema,
     MovieCommentSchema,
     FavoriteMovieListSchema,
-    FavoriteMovieResponseSchema, NotificationSchema,
+    FavoriteMovieResponseSchema,
+    NotificationSchema,
 )
 
 router = APIRouter()
@@ -51,9 +54,7 @@ router = APIRouter()
     responses={
         404: {
             "description": "No movies found.",
-            "content": {
-                "application/json": {"example": {"detail": "No movies found."}}
-            },
+            "content": {"application/json": {"example": {"detail": "No movies found."}}},
         }
     },
     tags=["Movies", "All"],
@@ -82,16 +83,8 @@ def get_movie_list(
 
     response = MovieListResponseSchema(
         movies=movie_list,
-        prev_page=(
-            f"/theater/movies/?page={page - 1}&per_page={per_page}"
-            if page > 1
-            else None
-        ),
-        next_page=(
-            f"/theater/movies/?page={page + 1}&per_page={per_page}"
-            if page < total_pages
-            else None
-        ),
+        prev_page=(f"/theater/movies/?page={page - 1}&per_page={per_page}" if page > 1 else None),
+        next_page=(f"/theater/movies/?page={page + 1}&per_page={per_page}" if page < total_pages else None),
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -115,24 +108,18 @@ def get_movie_list(
         },
         400: {
             "description": "Invalid input.",
-            "content": {
-                "application/json": {"example": {"detail": "Invalid input data."}}
-            },
+            "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
         },
     },
     status_code=status.HTTP_201_CREATED,
     tags=["Movies", "Create"],
 )
-def create_movie(
-    movie_data: MovieCreateSchema, db: Session = Depends(get_db)
-) -> MovieDetailSchema:
+def create_movie(movie_data: MovieCreateSchema, db: Session = Depends(get_db)) -> MovieDetailSchema:
     """
     Add a new movie to the database.
     """
     existing_movie = (
-        db.query(MovieModel)
-        .filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year)
-        .first()
+        db.query(MovieModel).filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year).first()
     )
 
     if existing_movie:
@@ -142,19 +129,13 @@ def create_movie(
         )
 
     try:
-        director = (
-            db.query(DirectorModel).filter_by(name=movie_data.director.name).first()
-        )
+        director = db.query(DirectorModel).filter_by(name=movie_data.director.name).first()
         if not director:
             director = DirectorModel(name=movie_data.director.name)
             db.add(director)
             db.flush()
 
-        certification = (
-            db.query(CertificationModel)
-            .filter_by(name=movie_data.certification.name)
-            .first()
-        )
+        certification = db.query(CertificationModel).filter_by(name=movie_data.certification.name).first()
         if not certification:
             certification = CertificationModel(name=movie_data.certification.name)
             db.add(certification)
@@ -216,11 +197,7 @@ def create_movie(
     responses={
         404: {
             "description": "Movie not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         }
     },
     tags=["Movies", "ID_search"],
@@ -245,9 +222,7 @@ def get_movie_by_id(
     )
 
     if not movie:
-        raise HTTPException(
-            status_code=404, detail="Movie with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
 
     return MovieDetailSchema.model_validate(movie)
 
@@ -264,11 +239,7 @@ def get_movie_by_id(
         204: {"description": "Movie deleted successfully."},
         404: {
             "description": "Movie not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
@@ -276,8 +247,8 @@ def get_movie_by_id(
 )
 @router.delete("/movies/{movie_id}/", summary="Delete a movie by ID")
 def delete_movie(
-        movie_id: int,
-        db: Session = Depends(get_db),
+    movie_id: int,
+    db: Session = Depends(get_db),
 ):
     """
     Delete a specific movie by its ID.
@@ -291,7 +262,7 @@ def delete_movie(
     if order_items_count > 0:
         raise HTTPException(
             status_code=400,
-            detail="Cannot delete movie, it has been purchased by at least one user."
+            detail="Cannot delete movie, it has been purchased by at least one user.",
         )
 
     db.delete(movie)
@@ -310,19 +281,11 @@ def delete_movie(
     responses={
         200: {
             "description": "Movie updated successfully.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie updated successfully."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie updated successfully."}}},
         },
         404: {
             "description": "Movie not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Movie with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         },
     },
     tags=["Movies", "Update"],
@@ -338,9 +301,7 @@ def update_movie(
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
 
     if not movie:
-        raise HTTPException(
-            status_code=404, detail="Movie with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
 
     for key, value in movie_data.dict(exclude_unset=True).items():
         setattr(movie, key, value)
@@ -383,9 +344,7 @@ def like_movie(
     if like_entry:
         like_entry.is_liked = is_liked
     else:
-        new_like = MovieLikeModel(
-            user_id=current_user.id, movie_id=movie_id, is_liked=is_liked
-        )
+        new_like = MovieLikeModel(user_id=current_user.id, movie_id=movie_id, is_liked=is_liked)
         db.add(new_like)
 
     db.commit()
@@ -405,12 +364,8 @@ def get_movie_likes(movie_id: int, db: Session = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    likes_count = (
-        db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
-    )
-    dislikes_count = (
-        db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
-    )
+    likes_count = db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
+    dislikes_count = db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
 
     return {"movie_id": movie_id, "likes": likes_count, "dislikes": dislikes_count}
 
@@ -433,9 +388,7 @@ def add_comment(
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    comment = MovieCommentModel(
-        movie_id=movie_id, user_id=current_user.id, content=comment_data.content
-    )
+    comment = MovieCommentModel(movie_id=movie_id, user_id=current_user.id, content=comment_data.content)
     db.add(comment)
     db.commit()
     db.refresh(comment)
@@ -455,9 +408,7 @@ def get_comments(movie_id: int, db: Session = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    comments = (
-        db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
-    )
+    comments = db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
     return comments
 
 
@@ -545,11 +496,7 @@ def get_favorite_movies(
     """
     Get the list of favorite movies with optional search, filter, and sort options.
     """
-    query = (
-        db.query(MovieModel)
-        .join(FavoriteMovieModel)
-        .filter(FavoriteMovieModel.user_id == current_user.id)
-    )
+    query = db.query(MovieModel).join(FavoriteMovieModel).filter(FavoriteMovieModel.user_id == current_user.id)
 
     if search:
         query = query.filter(MovieModel.name.ilike(f"%{search}%"))
@@ -565,9 +512,7 @@ def get_favorite_movies(
     return favorite_movies
 
 
-@router.post(
-    "/movies/{movie_id}/rating/", summary="Rate a movie", tags=["Movies", "Rating"]
-)
+@router.post("/movies/{movie_id}/rating/", summary="Rate a movie", tags=["Movies", "Rating"])
 def rate_movie(
     movie_id: int,
     rating: float,
@@ -596,9 +541,7 @@ def rate_movie(
     if existing_rating:
         existing_rating.rating = rating
     else:
-        new_rating = MovieRatingModel(
-            movie_id=movie_id, user_id=current_user.id, rating=rating
-        )
+        new_rating = MovieRatingModel(movie_id=movie_id, user_id=current_user.id, rating=rating)
         db.add(new_rating)
 
     db.commit()
@@ -668,7 +611,7 @@ async def reply_to_comment(
         await create_notification(
             db,
             user_id=parent_comment.user_id,
-            message="Your comment has received a reply."
+            message="Your comment has received a reply.",
         )
 
     return {"message": "Reply added successfully."}
@@ -695,7 +638,7 @@ async def like_comment(
     result = await db.execute(
         select(CommentLikeModel).filter(
             CommentLikeModel.comment_id == comment_id,
-            CommentLikeModel.user_id == current_user.id
+            CommentLikeModel.user_id == current_user.id,
         )
     )
     existing_like = result.scalars().first()
@@ -707,11 +650,7 @@ async def like_comment(
     await db.commit()
 
     if comment.user_id != current_user.id:
-        await create_notification(
-            db,
-            user_id=comment.user_id,
-            message="Your comment has received a like."
-        )
+        await create_notification(db, user_id=comment.user_id, message="Your comment has received a like.")
 
     return {"message": "Comment liked successfully."}
 

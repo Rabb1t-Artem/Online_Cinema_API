@@ -57,14 +57,8 @@ def get_star_list(
 
     response = StarListResponseSchema(
         stars=star_list,
-        prev_page=(
-            f"/theater/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None
-        ),
-        next_page=(
-            f"/theater/stars/?page={page + 1}&per_page={per_page}"
-            if page < total_pages
-            else None
-        ),
+        prev_page=(f"/theater/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None),
+        next_page=(f"/theater/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None),
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -85,17 +79,13 @@ def get_star_list(
         },
         400: {
             "description": "Invalid input.",
-            "content": {
-                "application/json": {"example": {"detail": "Invalid input data."}}
-            },
+            "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
         },
     },
     status_code=status.HTTP_201_CREATED,
     tags=["Stars", "Create"],
 )
-def create_star(
-    star_data: StarCreateSchema, db: Session = Depends(get_db)
-) -> StarDetailSchema:
+def create_star(star_data: StarCreateSchema, db: Session = Depends(get_db)) -> StarDetailSchema:
     """
     Add a new star to the database.
     """
@@ -131,11 +121,7 @@ def create_star(
     responses={
         404: {
             "description": "Star not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         }
     },
     tags=["Stats", "ID_find"],
@@ -150,9 +136,7 @@ def get_star_by_id(
     star = db.query(StarModel).filter(StarModel.id == star_id).first()
 
     if not star:
-        raise HTTPException(
-            status_code=404, detail="Star with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Star with the given ID was not found.")
 
     return StarDetailSchema.model_validate(star)
 
@@ -169,11 +153,7 @@ def get_star_by_id(
         204: {"description": "Star deleted successfully."},
         404: {
             "description": "Star not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
@@ -189,9 +169,7 @@ def delete_star(
     star = db.query(StarModel).filter(StarModel.id == star_id).first()
 
     if not star:
-        raise HTTPException(
-            status_code=404, detail="Star with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Star with the given ID was not found.")
 
     db.delete(star)
     db.commit()
@@ -209,19 +187,11 @@ def delete_star(
     responses={
         200: {
             "description": "Star updated successfully.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star updated successfully."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star updated successfully."}}},
         },
         404: {
             "description": "Star not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
     tags=["Stars", "Update"],
@@ -237,9 +207,7 @@ def update_star(
     star = db.query(StarModel).filter(StarModel.id == star_id).first()
 
     if not star:
-        raise HTTPException(
-            status_code=404, detail="Star with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Star with the given ID was not found.")
 
     for key, value in star_data.dict(exclude_unset=True).items():
         setattr(star, key, value)
