@@ -60,9 +60,7 @@ MoviesDirectorsModel = Table(
     "movies_directors",
     Base.metadata,
     Column("movie_id", ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True),
-    Column(
-        "director_id", ForeignKey("directors.id", ondelete="CASCADE"), primary_key=True
-    ),
+    Column("director_id", ForeignKey("directors.id", ondelete="CASCADE"), primary_key=True),
 )
 
 
@@ -98,9 +96,7 @@ class StarModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel", secondary=StarsMoviesModel, back_populates="stars"
-    )
+    movies: Mapped[list["MovieModel"]] = relationship("MovieModel", secondary=StarsMoviesModel, back_populates="stars")
 
     def __repr__(self):
         return f"<Star(name='{self.name}')>"
@@ -142,9 +138,7 @@ class MovieModel(Base):
     __tablename__ = "movies"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    uuid: Mapped[str] = mapped_column(
-        String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4())
-    )
+    uuid: Mapped[str] = mapped_column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     time: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -155,38 +149,26 @@ class MovieModel(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
 
-    certification_id: Mapped[int] = mapped_column(
-        ForeignKey("certifications.id"), nullable=False
-    )
+    certification_id: Mapped[int] = mapped_column(ForeignKey("certifications.id"), nullable=False)
     certification: Mapped["CertificationModel"] = relationship(
         "CertificationModel",
         back_populates="movies",
     )
-    order_items: Mapped[List["OrderItemModel"]] = relationship(
-        "OrderItemModel", back_populates="movie"
-    )
+    order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
     genres: Mapped[list["GenreModel"]] = relationship(
         "GenreModel", secondary=MoviesGenresModel, back_populates="movies"
     )
 
-    stars: Mapped[list["StarModel"]] = relationship(
-        "StarModel", secondary=StarsMoviesModel, back_populates="movies"
-    )
+    stars: Mapped[list["StarModel"]] = relationship("StarModel", secondary=StarsMoviesModel, back_populates="movies")
 
     directors: Mapped[list["DirectorModel"]] = relationship(
         "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
-    likes = relationship(
-        "MovieLikeModel", back_populates="movies", cascade="all, delete-orphan"
-    )
-    ratings: Mapped[List["MovieRatingModel"]] = relationship(
-        "MovieRatingModel", back_populates="movie"
-    )
+    likes = relationship("MovieLikeModel", back_populates="movies", cascade="all, delete-orphan")
+    ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
 
-    __table_args__ = (
-        UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),
-    )
+    __table_args__ = (UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),)
 
     @property
     def average_rating(self):
@@ -206,32 +188,22 @@ class MovieLikeModel(Base):
     __tablename__ = "movie_likes"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
-    movie_id = Column(
-        Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False
-    )
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
     is_liked = Column(Boolean, nullable=False, default=False)
 
     movie = relationship("MovieModel", back_populates="likes")
     user = relationship("UserModel", back_populates="likes")
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),)
 
 
 class MovieCommentModel(Base):
     __tablename__ = "movie_comments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    movie_id = Column(
-        Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False
-    )
-    user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content = Column(String(500), nullable=False)
     created_at = Column(DateTime, default=datetime.UTC)
 
@@ -268,11 +240,7 @@ class MovieRatingModel(Base):
     movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="ratings")
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="ratings")
 
-    __table_args__ = (
-        UniqueConstraint(
-            "movie_id", "user_id", name="unique_movie_user_rating_constraint"
-        ),
-    )
+    __table_args__ = (UniqueConstraint("movie_id", "user_id", name="unique_movie_user_rating_constraint"),)
 
 
 class NotificationModel(Base):
@@ -294,9 +262,7 @@ class CommentLikeModel(Base):
     __tablename__ = "comment_likes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-    )
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     comment_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("movie_comments.id", ondelete="CASCADE"), nullable=False
     )
@@ -305,9 +271,7 @@ class CommentLikeModel(Base):
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="comment_likes")
     comment: Mapped["MovieCommentModel"] = relationship("MovieCommentModel", back_populates="likes")
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "comment_id", name="unique_user_comment_like"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "comment_id", name="unique_user_comment_like"),)
 
     def __repr__(self):
         return f"<CommentLike(user_id={self.user_id}, comment_id={self.comment_id})>"

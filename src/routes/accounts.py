@@ -59,20 +59,12 @@ BASE_URL = "http://127.0.0.1/api/v1/accounts"
         409: {
             "description": "Conflict - User with this email already exists.",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "A user with this email test@example.com already exists."
-                    }
-                }
+                "application/json": {"example": {"detail": "A user with this email test@example.com already exists."}}
             },
         },
         500: {
             "description": "Internal Server Error - An error occurred during user creation.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "An error occurred during user creation."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "An error occurred during user creation."}}},
         },
     },
 )
@@ -89,9 +81,7 @@ async def register_user(
     If a user with the same email already exists, an HTTP 409 error is raised.
     In case of any unexpected issues during the creation process, an HTTP 500 error is returned.
     """
-    result = await db.execute(
-        select(UserModel).where(UserModel.email == user_data.email)
-    )
+    result = await db.execute(select(UserModel).where(UserModel.email == user_data.email))
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
@@ -99,9 +89,7 @@ async def register_user(
             detail=f"A user with this email {user_data.email} already exists.",
         )
     user_group = (
-        await db.execute(
-            select(UserGroupModel).where(UserGroupModel.name == UserGroupEnum.USER)
-        )
+        await db.execute(select(UserGroupModel).where(UserGroupModel.name == UserGroupEnum.USER))
     ).scalar_one_or_none()
     try:
         new_user = UserModel.create(
@@ -185,9 +173,9 @@ async def activate_account(
     )
     token_record = result.scalar_one_or_none()
 
-    if not token_record or cast(datetime, token_record.expires_at).replace(
-        tzinfo=timezone.utc
-    ) < datetime.now(timezone.utc):
+    if not token_record or cast(datetime, token_record.expires_at).replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    ):
         if token_record:
             await db.delete(token_record)
             await db.commit()
@@ -242,15 +230,9 @@ async def request_password_reset_token(
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:
-        return MessageResponseSchema(
-            message="If you are registered, you will receive an email with instructions."
-        )
+        return MessageResponseSchema(message="If you are registered, you will receive an email with instructions.")
 
-    await db.execute(
-        delete(PasswordResetTokenModel).where(
-            PasswordResetTokenModel.user_id == user.id
-        )
-    )
+    await db.execute(delete(PasswordResetTokenModel).where(PasswordResetTokenModel.user_id == user.id))
 
     reset_token = PasswordResetTokenModel(user_id=cast(int, user.id))
     db.add(reset_token)
@@ -262,9 +244,7 @@ async def request_password_reset_token(
         reset_link=f"{BASE_URL}/reset-password/complete?token={reset_token.token}",
     )
 
-    return MessageResponseSchema(
-        message="If you are registered, you will receive an email with instructions."
-    )
+    return MessageResponseSchema(message="If you are registered, you will receive an email with instructions.")
 
 
 @router.post(
@@ -295,11 +275,7 @@ async def request_password_reset_token(
         500: {
             "description": "Internal Server Error - An error occurred while resetting the password.",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "An error occurred while resetting the password."
-                    }
-                }
+                "application/json": {"example": {"detail": "An error occurred while resetting the password."}}
             },
         },
     },
@@ -330,11 +306,7 @@ async def reset_password(
 
     expires_at = cast(datetime, token_record.expires_at).replace(tzinfo=timezone.utc)
 
-    if (
-        not token_record
-        or token_record.token != data.token
-        or expires_at < datetime.now(timezone.utc)
-    ):
+    if not token_record or token_record.token != data.token or expires_at < datetime.now(timezone.utc):
         if token_record:
             await db.delete(token_record)
             await db.commit()
@@ -372,28 +344,16 @@ async def reset_password(
     responses={
         401: {
             "description": "Unauthorized - Invalid email or password.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Invalid email or password."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Invalid email or password."}}},
         },
         403: {
             "description": "Forbidden - User account is not activated.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "User account is not activated."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "User account is not activated."}}},
         },
         500: {
             "description": "Internal Server Error - An error occurred while processing the request.",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "An error occurred while processing the request."
-                    }
-                }
+                "application/json": {"example": {"detail": "An error occurred while processing the request."}}
             },
         },
     },
@@ -411,9 +371,7 @@ async def login_user(
     If authentication is successful, creates a new refresh token and
     returns both access and refresh tokens.
     """
-    result = await db.execute(
-        select(UserModel).where(UserModel.email == login_data.email)
-    )
+    result = await db.execute(select(UserModel).where(UserModel.email == login_data.email))
     user = result.scalar_one_or_none()
 
     if not user or not user.verify_password(login_data.password):
@@ -475,15 +433,11 @@ async def login_user(
     responses={
         400: {
             "description": "Bad Request - The provided refresh token is invalid or expired.",
-            "content": {
-                "application/json": {"example": {"detail": "Token has expired."}}
-            },
+            "content": {"application/json": {"example": {"detail": "Token has expired."}}},
         },
         401: {
             "description": "Unauthorized - Refresh token not found.",
-            "content": {
-                "application/json": {"example": {"detail": "Refresh token not found."}}
-            },
+            "content": {"application/json": {"example": {"detail": "Refresh token not found."}}},
         },
         404: {
             "description": "Not Found - The user associated with the token does not exist.",
@@ -511,9 +465,7 @@ async def refresh_access_token(
             detail=str(error),
         )
 
-    result = await db.execute(
-        select(RefreshTokenModel).filter_by(token=token_data.refresh_token)
-    )
+    result = await db.execute(select(RefreshTokenModel).filter_by(token=token_data.refresh_token))
     refresh_token_record = result.scalar_one_or_none()
 
     if not refresh_token_record:

@@ -13,9 +13,7 @@ from storages import S3StorageInterface
 
 
 class S3StorageClient(S3StorageInterface):
-    def __init__(
-        self, endpoint_url: str, access_key: str, secret_key: str, bucket_name: str
-    ):
+    def __init__(self, endpoint_url: str, access_key: str, secret_key: str, bucket_name: str):
         """
         Initialize S3 Storage Client.
 

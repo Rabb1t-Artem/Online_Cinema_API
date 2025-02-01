@@ -18,15 +18,11 @@ async def create_order(user_id: int, db: AsyncSession = Depends(get_db)):
     async with db.begin():
         # Check for any cancelled orders
         existing_orders = await db.execute(
-            select(OrderModel).filter(
-                OrderModel.user_id == user_id, OrderModel.status != "paid"
-            )
+            select(OrderModel).filter(OrderModel.user_id == user_id, OrderModel.status != "paid")
         )
         existing_orders = existing_orders.scalars().all()
 
-        if existing_orders and any(
-            order.status == "cancelled" for order in existing_orders
-        ):
+        if existing_orders and any(order.status == "cancelled" for order in existing_orders):
             raise HTTPException(status_code=400, detail="You have cancelled orders")
 
         # Get movies in the user's cart
@@ -42,17 +38,13 @@ async def create_order(user_id: int, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Your cart is empty")
 
         # Check for unavailable movies
-        unavailable_movies = [
-            movie for movie in movies_in_cart if not movie.is_available
-        ]
+        unavailable_movies = [movie for movie in movies_in_cart if not movie.is_available]
         if unavailable_movies:
             raise HTTPException(status_code=400, detail="Some movies are unavailable")
 
         # Check for existing pending orders
         existing_orders = await db.execute(
-            select(OrderModel).filter(
-                OrderModel.user_id == user_id, OrderModel.status == "pending"
-            )
+            select(OrderModel).filter(OrderModel.user_id == user_id, OrderModel.status == "pending")
         )
         pending_orders = existing_orders.scalars().all()
         for order in pending_orders:
@@ -73,9 +65,7 @@ async def create_order(user_id: int, db: AsyncSession = Depends(get_db)):
 
         # Add order items
         for movie in movies_in_cart:
-            order_item = OrderItemModel(
-                order_id=order.id, movie_id=movie.id, price_at_order=movie.price
-            )
+            order_item = OrderItemModel(order_id=order.id, movie_id=movie.id, price_at_order=movie.price)
             db.add(order_item)
 
         await db.commit()
@@ -96,21 +86,14 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Order not found")
 
     if order.status == "cancelled":
-        raise HTTPException(
-            status_code=400, detail="Order is cancelled and cannot be accessed"
-        )
+        raise HTTPException(status_code=400, detail="Order is cancelled and cannot be accessed")
 
     # Get the order items
-    order_items = await db.execute(
-        select(OrderItemModel).filter(OrderItemModel.order_id == order_id)
-    )
+    order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
     order_items_response = [
-        OrderItemResponseSchema(
-            movie_id=item.movie_id, price_at_order=item.price_at_order
-        )
-        for item in items
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
     ]
 
     return OrderResponseSchema(
@@ -124,9 +107,7 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/orders/{order_id}", response_model=OrderResponseSchema)
-async def update_order_status(
-    order_id: int, status: str, db: AsyncSession = Depends(get_db)
-):
+async def update_order_status(order_id: int, status: str, db: AsyncSession = Depends(get_db)):
     """
     Update the status of an order.
     Valid statuses are "pending", "paid", and "cancelled".
@@ -143,9 +124,7 @@ async def update_order_status(
         raise HTTPException(status_code=404, detail="Order not found")
 
     if order.status in ["paid", "cancelled"]:
-        raise HTTPException(
-            status_code=400, detail="Cannot update a paid or cancelled order"
-        )
+        raise HTTPException(status_code=400, detail="Cannot update a paid or cancelled order")
 
     # Update the order status
     order.status = status
@@ -155,16 +134,11 @@ async def update_order_status(
     await db.refresh(order)
 
     # Get the order items
-    order_items = await db.execute(
-        select(OrderItemModel).filter(OrderItemModel.order_id == order_id)
-    )
+    order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
     order_items_response = [
-        OrderItemResponseSchema(
-            movie_id=item.movie_id, price_at_order=item.price_at_order
-        )
-        for item in items
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
     ]
 
     return OrderResponseSchema(
@@ -190,9 +164,7 @@ async def delete_order(order_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Order not found")
 
     if order.status != "pending":
-        raise HTTPException(
-            status_code=400, detail="Cannot delete a paid or cancelled order"
-        )
+        raise HTTPException(status_code=400, detail="Cannot delete a paid or cancelled order")
 
     # Delete order items
     await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
@@ -216,9 +188,7 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Order not found")
 
     if order.status != "pending":
-        raise HTTPException(
-            status_code=400, detail="Only pending orders can be cancelled"
-        )
+        raise HTTPException(status_code=400, detail="Only pending orders can be cancelled")
 
     # Update the order status to "cancelled"
     order.status = "cancelled"
@@ -228,16 +198,11 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
     await db.refresh(order)
 
     # Get the order items
-    order_items = await db.execute(
-        select(OrderItemModel).filter(OrderItemModel.order_id == order_id)
-    )
+    order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
     order_items_response = [
-        OrderItemResponseSchema(
-            movie_id=item.movie_id, price_at_order=item.price_at_order
-        )
-        for item in items
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
     ]
 
     return OrderResponseSchema(
