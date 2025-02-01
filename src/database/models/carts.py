@@ -27,7 +27,7 @@ class CartModel(Base):
         cascade="all, delete-orphan"
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<CartModel(id={self.id}, user_id={self.user_id})>"
 
 
@@ -52,5 +52,5 @@ class CartItemModel(Base):
         UniqueConstraint("cart_id", "movie_id", name="unique_cart_movie"),
     )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<CartItemModel(id={self.id}, cart_id={self.cart_id}, movie_id={self.movie_id})>"
