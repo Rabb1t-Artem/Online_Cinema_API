@@ -8,7 +8,7 @@ from database import (
     ActivationTokenModel,
     UserModel,
     RefreshTokenModel,
-    PasswordResetTokenModel
+    PasswordResetTokenModel,
 )
 
 
@@ -30,10 +30,7 @@ def test_registration(e2e_client, reset_db_once_for_e2e, settings, seed_user_gro
     - Verify that an email was sent to the expected recipient.
     - Ensure the email body contains the activation link.
     """
-    user_data = {
-        "email": "test@mate.com",
-        "password": "StrongPassword123!"
-    }
+    user_data = {"email": "test@mate.com", "password": "StrongPassword123!"}
 
     response = e2e_client.post("/api/v1/accounts/register/", json=user_data)
 
@@ -95,9 +92,9 @@ def test_account_activation(e2e_client, settings, db_session):
     - Verify the email sent confirms the activation and contains the expected details.
     """
     user_email = "test@mate.com"
-    activation_token = db_session.query(ActivationTokenModel).join(UserModel).filter(
-        UserModel.email == user_email
-    ).first()
+    activation_token = (
+        db_session.query(ActivationTokenModel).join(UserModel).filter(UserModel.email == user_email).first()
+    )
 
     assert activation_token, f"Activation token for email {user_email} not found!"
     token_value = activation_token.token
@@ -124,8 +121,9 @@ def test_account_activation(e2e_client, settings, db_session):
     email = messages[0]
     assert email["Content"]["Headers"]["To"][0] == user_email, "Recipient email does not match!"
     email_subject = email["Content"]["Headers"].get("Subject", [None])[0]
-    assert email_subject == "Account Activated Successfully", \
-        f"Expected subject 'Account Activated Successfully', but got '{email_subject}'"
+    assert (
+        email_subject == "Account Activated Successfully"
+    ), f"Expected subject 'Account Activated Successfully', but got '{email_subject}'"
 
     email_html = email["Content"]["Body"]
     soup = BeautifulSoup(email_html, "html.parser")
@@ -160,10 +158,7 @@ def test_user_login(e2e_client, db_session):
     - Assert the response status code and verify the returned access and refresh tokens.
     - Validate that the refresh token is stored in the database.
     """
-    user_data = {
-        "email": "test@mate.com",
-        "password": "StrongPassword123!"
-    }
+    user_data = {"email": "test@mate.com", "password": "StrongPassword123!"}
 
     login_url = "/api/v1/accounts/login/"
     response = e2e_client.post(login_url, json=user_data)
@@ -211,9 +206,9 @@ def test_request_password_reset(e2e_client, db_session, settings):
     response_data = response.json()
     assert response_data["message"] == "If you are registered, you will receive an email with instructions."
 
-    reset_token = db_session.query(PasswordResetTokenModel).join(UserModel).filter(
-        UserModel.email == user_email
-    ).first()
+    reset_token = (
+        db_session.query(PasswordResetTokenModel).join(UserModel).filter(UserModel.email == user_email).first()
+    )
 
     assert reset_token, f"Password reset token for email {user_email} was not created!"
 
@@ -228,8 +223,9 @@ def test_request_password_reset(e2e_client, db_session, settings):
     email = messages[0]
     assert email["Content"]["Headers"]["To"][0] == user_email, "Recipient email does not match!"
     email_subject = email["Content"]["Headers"].get("Subject", [None])[0]
-    assert email_subject == "Password Reset Request", \
-        f"Expected subject 'Password Reset Request', but got '{email_subject}'"
+    assert (
+        email_subject == "Password Reset Request"
+    ), f"Expected subject 'Password Reset Request', but got '{email_subject}'"
 
     email_html = email["Content"]["Body"]
     soup = BeautifulSoup(email_html, "html.parser")
@@ -273,15 +269,18 @@ def test_reset_password(e2e_client, db_session, settings):
     user_email = "test@mate.com"
     new_password = "NewSecurePassword123!"
 
-    reset_token_record = db_session.query(PasswordResetTokenModel).join(UserModel).filter(
-        UserModel.email == user_email
-    ).first()
+    reset_token_record = (
+        db_session.query(PasswordResetTokenModel).join(UserModel).filter(UserModel.email == user_email).first()
+    )
 
     assert reset_token_record, f"Password reset token for email {user_email} was not found!"
     reset_token = reset_token_record.token
 
     reset_url = "/api/v1/accounts/reset-password/complete/"
-    response = e2e_client.post(reset_url, json={"email": user_email, "password": new_password, "token": reset_token})
+    response = e2e_client.post(
+        reset_url,
+        json={"email": user_email, "password": new_password, "token": reset_token},
+    )
 
     assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
     response_data = response.json()
@@ -306,8 +305,9 @@ def test_reset_password(e2e_client, db_session, settings):
     email = messages[0]
     assert email["Content"]["Headers"]["To"][0] == user_email, "Recipient email does not match!"
     email_subject = email["Content"]["Headers"].get("Subject", [None])[0]
-    assert email_subject == "Your Password Has Been Successfully Reset", \
-        f"Expected subject 'Your Password Has Been Successfully Reset', but got '{email_subject}'"
+    assert (
+        email_subject == "Your Password Has Been Successfully Reset"
+    ), f"Expected subject 'Your Password Has Been Successfully Reset', but got '{email_subject}'"
 
     email_html = email["Content"]["Body"]
     soup = BeautifulSoup(email_html, "html.parser")
@@ -343,10 +343,7 @@ def test_user_login_with_new_password(e2e_client, db_session):
     - Validate that the refresh token is stored in the database.
     """
 
-    user_data = {
-        "email": "test@mate.com",
-        "password": "NewSecurePassword123!"
-    }
+    user_data = {"email": "test@mate.com", "password": "NewSecurePassword123!"}
 
     login_url = "/api/v1/accounts/login/"
     response = e2e_client.post(login_url, json=user_data)

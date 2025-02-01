@@ -11,6 +11,7 @@ class OrderItemResponseSchema(BaseModel):
     class Config:
         orm_mode = True
 
+
 class OrderResponseSchema(BaseModel):
     id: int
     user_id: int

@@ -50,7 +50,10 @@ async def create_order(user_id: int, db: AsyncSession = Depends(get_db)):
         for order in pending_orders:
             order_movie_ids = [item.movie_id for item in order.items]
             if any(item.movie_id in order_movie_ids for item in movies_in_cart):
-                raise HTTPException(status_code=400, detail="Some movies are already in another pending order")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Some movies are already in another pending order",
+                )
 
         # Calculate the total amount
         total_amount = sum(movie.price for movie in movies_in_cart)
@@ -89,10 +92,9 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
     order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
-    order_items_response = [OrderItemResponseSchema(
-        movie_id=item.movie_id,
-        price_at_order=item.price_at_order
-    ) for item in items]
+    order_items_response = [
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
+    ]
 
     return OrderResponseSchema(
         id=order.id,
@@ -100,7 +102,7 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
         created_at=order.created_at,
         status=order.status,
         total_amount=order.total_amount,
-        items=order_items_response
+        items=order_items_response,
     )
 
 
@@ -135,10 +137,9 @@ async def update_order_status(order_id: int, status: str, db: AsyncSession = Dep
     order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
-    order_items_response = [OrderItemResponseSchema(
-        movie_id=item.movie_id,
-        price_at_order=item.price_at_order
-    ) for item in items]
+    order_items_response = [
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
+    ]
 
     return OrderResponseSchema(
         id=order.id,
@@ -146,7 +147,7 @@ async def update_order_status(order_id: int, status: str, db: AsyncSession = Dep
         created_at=order.created_at,
         status=order.status,
         total_amount=order.total_amount,
-        items=order_items_response
+        items=order_items_response,
     )
 
 
@@ -200,10 +201,9 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
     order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
-    order_items_response = [OrderItemResponseSchema(
-        movie_id=item.movie_id,
-        price_at_order=item.price_at_order
-    ) for item in items]
+    order_items_response = [
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
+    ]
 
     return OrderResponseSchema(
         id=order.id,
@@ -211,5 +211,5 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
         created_at=order.created_at,
         status=order.status,
         total_amount=order.total_amount,
-        items=order_items_response
+        items=order_items_response,
     )

@@ -21,10 +21,12 @@ class OrderModel(Base):
     items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="order")
 
     def __repr__(self):
-        return (f"<OrderModel(id={self.id}, "
-                f"user_id={self.user_id}, "
-                f"status={self.status}, "
-                f"total_amount={self.total_amount})>")
+        return (
+            f"<OrderModel(id={self.id}, "
+            f"user_id={self.user_id}, "
+            f"status={self.status}, "
+            f"total_amount={self.total_amount})>"
+        )
 
 
 class OrderItemModel(Base):
@@ -39,7 +41,9 @@ class OrderItemModel(Base):
     movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="order_items")
 
     def __repr__(self):
-        return (f"<OrderItemModel(id={self.id}, "
-                f"order_id={self.order_id}, "
-                f"movie_id={self.movie_id}, "
-                f"price_at_order={self.price_at_order})>")
+        return (
+            f"<OrderItemModel(id={self.id}, "
+            f"order_id={self.order_id}, "
+            f"movie_id={self.movie_id}, "
+            f"price_at_order={self.price_at_order})>"
+        )
