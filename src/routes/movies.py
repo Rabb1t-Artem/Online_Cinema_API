@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -8,7 +10,7 @@ from database.models.movies import (
     GenreModel,
     DirectorModel,
     CertificationModel,
-    StarModel,
+    StarModel, MovieLikeModel, MovieCommentModel,
 )
 from schemas import (
     MovieListResponseSchema,
@@ -17,6 +19,7 @@ from schemas import (
     MovieCreateSchema,
     MovieUpdateSchema
 )
+from schemas.movies import MovieLikeSchema, MovieCommentCreateSchema, MovieCommentSchema
 
 router = APIRouter()
 
@@ -319,3 +322,97 @@ def update_movie(
     db.refresh(movie)
 
     return MovieDetailSchema.model_validate(movie)
+
+
+@router.post("/movies/{movie_id}/like/",
+             summary="Like or dislike a movie",
+             response_model=MovieLikeSchema,
+             tags=["Movies", "Likes"],
+             )
+def like_movie(
+    movie_id: int,
+    is_liked: bool,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Like or dislike a specific movie.
+    If the movie is already liked/disliked, update the status.
+    """
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    like_entry = db.query(MovieLikeModel).filter(
+        MovieLikeModel.movie_id == movie_id,
+        MovieLikeModel.user_id == current_user.id
+    ).first()
+
+    if like_entry:
+        like_entry.is_liked = is_liked
+    else:
+        new_like = MovieLikeModel(
+            user_id=current_user.id,
+            movie_id=movie_id,
+            is_liked=is_liked
+        )
+        db.add(new_like)
+
+    db.commit()
+    return {"message": "Movie like status updated successfully", "is_liked": is_liked}
+
+
+@router.get("/movies/{movie_id}/likes/",
+            summary="Get like/dislike count for a movie",
+            tags=["Movies", "Likes"],
+            )
+def get_movie_likes(movie_id: int, db: Session = Depends(get_db)):
+    """
+    Get the count of likes and dislikes for a specific movie.
+    """
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    likes_count = db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
+    dislikes_count = db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
+
+    return {"movie_id": movie_id, "likes": likes_count, "dislikes": dislikes_count}
+
+
+@router.post("/movies/{movie_id}/comments/", response_model=MovieCommentSchema, tags=["Movies", "Comments"])
+def add_comment(
+    movie_id: int,
+    comment_data: MovieCommentCreateSchema,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Add a comment to a movie.
+    """
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    comment = MovieCommentModel(
+        movie_id=movie_id,
+        user_id=current_user.id,
+        content=comment_data.content
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return comment
+
+
+@router.get("/movies/{movie_id}/comments/", response_model=List[MovieCommentSchema], tags=["Movies", "Comments"])
+def get_comments(movie_id: int, db: Session = Depends(get_db)):
+    """
+    Retrieve comments for a specific movie.
+    """
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    comments = db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
+    return comments

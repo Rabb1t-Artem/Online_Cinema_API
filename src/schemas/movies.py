@@ -114,3 +114,30 @@ class MovieUpdateSchema(BaseModel):
     model_config = {
         "from_attributes": True,
     }
+
+
+class MovieLikeSchema(BaseModel):
+    movie_id: int
+    is_liked: bool = False
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class MovieCommentCreateSchema(BaseModel):
+    content: str
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class MovieCommentSchema(MovieCommentCreateSchema):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    model_config = {
+        "from_attributes": True,
+    }
