@@ -42,6 +42,16 @@ class GenreListResponseSchema(BaseModel):
 class GenreDetailSchema(BaseModel):
     id: int
     name: str
+    movie_count: int
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class GenreCountSchema(BaseModel):
+    genre_name: str
+    movie_count: int
 
     model_config = {
         "from_attributes": True,
