@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from database import get_db
@@ -33,38 +34,33 @@ router = APIRouter()
     },
     tags=["Stars"],
 )
-def get_star_list(
+async def get_star_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     per_page: int = Query(10, ge=1, le=20, description="Number of items per page"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> StarListResponseSchema:
     """
     Fetch a paginated list of stars from the database.
     """
     offset = (page - 1) * per_page
 
-    query = db.query(StarModel).order_by(StarModel.name)
-
-    total_items = query.count()
-    stars = query.offset(offset).limit(per_page).all()
+    result = await db.execute(select(StarModel).order_by(StarModel.name))
+    stars = result.scalars().offset(offset).limit(per_page).all()
 
     if not stars:
         raise HTTPException(status_code=404, detail="No stars found.")
 
     star_list = [StarSchema.model_validate(star) for star in stars]
 
+    result = await db.execute(select(StarModel))
+    total_items = result.scalars().count()
+
     total_pages = (total_items + per_page - 1) // per_page
 
     response = StarListResponseSchema(
         stars=star_list,
-        prev_page=(
-            f"/theater/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None
-        ),
-        next_page=(
-            f"/theater/stars/?page={page + 1}&per_page={per_page}"
-            if page < total_pages
-            else None
-        ),
+        prev_page=(f"/theater/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None),
+        next_page=(f"/theater/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None),
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -85,35 +81,30 @@ def get_star_list(
         },
         400: {
             "description": "Invalid input.",
-            "content": {
-                "application/json": {"example": {"detail": "Invalid input data."}}
-            },
+            "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
         },
     },
     status_code=status.HTTP_201_CREATED,
     tags=["Stars", "Create"],
 )
-def create_star(
-    star_data: StarCreateSchema, db: Session = Depends(get_db)
-) -> StarDetailSchema:
+async def create_star(star_data: StarCreateSchema, db: AsyncSession = Depends(get_db)) -> StarDetailSchema:
     """
-    Add a new star to the database.
+    Add a new star to the database asynchronously.
     """
-    existing_star = db.query(StarModel).filter(StarModel.name == star_data.name).first()
+    
+    result = await db.execute(select(StarModel).filter(StarModel.name == star_data.name))
+    existing_star = result.scalars().first()
 
     if existing_star:
         raise HTTPException(
             status_code=409,
             detail=f"A star with the name '{star_data.name}' already exists.",
         )
-
-    star = StarModel(
-        name=star_data.name,
-    )
+    star = StarModel(name=star_data.name)
 
     db.add(star)
-    db.commit()
-    db.refresh(star)
+    await db.commit()
+    await db.refresh(star)
 
     return StarDetailSchema.model_validate(star)
 
@@ -131,28 +122,23 @@ def create_star(
     responses={
         404: {
             "description": "Star not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         }
     },
     tags=["Stats", "ID_find"],
 )
-def get_star_by_id(
+async def get_star_by_id(
     star_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> StarDetailSchema:
     """
-    Retrieve detailed information about a specific star by its ID.
+    Retrieve detailed information about a specific star by its ID asynchronously.
     """
-    star = db.query(StarModel).filter(StarModel.id == star_id).first()
+    result = await db.execute(select(StarModel).filter(StarModel.id == star_id))
+    star = result.scalars().first()
 
     if not star:
-        raise HTTPException(
-            status_code=404, detail="Star with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Star with the given ID was not found.")
 
     return StarDetailSchema.model_validate(star)
 
@@ -169,32 +155,28 @@ def get_star_by_id(
         204: {"description": "Star deleted successfully."},
         404: {
             "description": "Star not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Stars", "Delete"],
 )
-def delete_star(
+async def delete_star(
     star_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    Delete a specific star by its ID.
+    Delete a specific star by its ID asynchronously.
     """
-    star = db.query(StarModel).filter(StarModel.id == star_id).first()
+    result = await db.execute(select(StarModel).filter(StarModel.id == star_id))
+    star = result.scalars().first()
 
     if not star:
-        raise HTTPException(
-            status_code=404, detail="Star with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Star with the given ID was not found.")
 
-    db.delete(star)
-    db.commit()
+    await db.delete(star)
+    await db.commit()
+
     return {"detail": "Star deleted successfully."}
 
 
@@ -209,42 +191,33 @@ def delete_star(
     responses={
         200: {
             "description": "Star updated successfully.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star updated successfully."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star updated successfully."}}},
         },
         404: {
             "description": "Star not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Star with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
     tags=["Stars", "Update"],
 )
-def update_star(
+async def update_star(
     star_id: int,
     star_data: StarUpdateSchema,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    Update a specific star by its ID.
+    Update a specific star by its ID asynchronously.
     """
-    star = db.query(StarModel).filter(StarModel.id == star_id).first()
+    result = await db.execute(select(StarModel).filter(StarModel.id == star_id))
+    star = result.scalars().first()
 
     if not star:
-        raise HTTPException(
-            status_code=404, detail="Star with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Star with the given ID was not found.")
 
     for key, value in star_data.dict(exclude_unset=True).items():
         setattr(star, key, value)
 
-    db.commit()
-    db.refresh(star)
+    await db.commit()
+    await db.refresh(star)
 
     return StarDetailSchema.model_validate(star)

@@ -24,9 +24,7 @@ def test_create_user_profile_with_fake_s3(
     5. Verify that the profile was created in the database.
     """
 
-    user = UserModel.create(
-        email="test@mate.com", raw_password="TestPassword123!", group_id=1
-    )
+    user = UserModel.create(email="test@mate.com", raw_password="TestPassword123!", group_id=1)
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -62,24 +60,16 @@ def test_create_user_profile_with_fake_s3(
     assert profile_data["date_of_birth"] == "1990-01-01"
     assert "avatar" in profile_data, "Avatar URL is missing!"
 
-    assert (
-        avatar_key in s3_storage_fake.storage
-    ), "Avatar file was not uploaded to Fake S3 Storage!"
-    assert (
-        s3_storage_fake.get_file_url(avatar_key) == f"http://fake-s3.local/{avatar_key}"
-    )
+    assert avatar_key in s3_storage_fake.storage, "Avatar file was not uploaded to Fake S3 Storage!"
+    assert s3_storage_fake.get_file_url(avatar_key) == f"http://fake-s3.local/{avatar_key}"
 
-    profile_in_db = (
-        db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
-    )
+    profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
     assert profile_in_db, f"Profile for user {user.id} should exist!"
 
     assert profile_in_db.first_name == "john", "First name is incorrect!"
     assert profile_in_db.last_name == "doe", "Last name is incorrect!"
     assert profile_in_db.gender == "man", "Gender is incorrect!"
-    assert (
-        str(profile_in_db.date_of_birth) == "1990-01-01"
-    ), "Date of birth is incorrect!"
+    assert str(profile_in_db.date_of_birth) == "1990-01-01", "Date of birth is incorrect!"
     assert profile_in_db.info == "This is a test profile.", "Profile info is incorrect!"
     assert profile_in_db.avatar == avatar_key, "Avatar key in database does not match!"
 
@@ -96,9 +86,7 @@ def test_create_user_profile_with_fake_s3(
         ),
     ],
 )
-def test_create_user_profile_invalid_auth(
-    client, headers, expected_status, expected_detail
-):
+def test_create_user_profile_invalid_auth(client, headers, expected_status, expected_detail):
     """
     Test profile creation with missing or incorrectly formatted Authorization header.
 
@@ -115,12 +103,8 @@ def test_create_user_profile_invalid_auth(
 
     response = client.post(profile_url, headers=headers)
 
-    assert (
-        response.status_code == expected_status
-    ), f"Expected {expected_status}, got {response.status_code}"
-    assert (
-        response.json()["detail"] == expected_detail
-    ), f"Unexpected error message: {response.json()['detail']}"
+    assert response.status_code == expected_status, f"Expected {expected_status}, got {response.status_code}"
+    assert response.json()["detail"] == expected_detail, f"Unexpected error message: {response.json()['detail']}"
 
 
 @pytest.mark.unit
@@ -158,15 +142,11 @@ def test_create_user_profile_expired_token(client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 401, f"Expected 401, got {response.status_code}"
-    assert (
-        response.json()["detail"] == "Token has expired."
-    ), f"Unexpected error message: {response.json()['detail']}"
+    assert response.json()["detail"] == "Token has expired.", f"Unexpected error message: {response.json()['detail']}"
 
 
 @pytest.mark.unit
-def test_admin_creates_user_profile(
-    db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
-):
+def test_admin_creates_user_profile(db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client):
     """
     Test that an admin can create a profile for another user.
 
@@ -177,15 +157,11 @@ def test_admin_creates_user_profile(
     4. Verify that the profile was created successfully.
     """
 
-    admin_user = UserModel.create(
-        email="admin@mate.com", raw_password="AdminPass123!", group_id=3
-    )
+    admin_user = UserModel.create(email="admin@mate.com", raw_password="AdminPass123!", group_id=3)
     admin_user.is_active = True
     db_session.add(admin_user)
 
-    regular_user = UserModel.create(
-        email="user@mate.com", raw_password="UserPass123!", group_id=1
-    )
+    regular_user = UserModel.create(email="user@mate.com", raw_password="UserPass123!", group_id=1)
     regular_user.is_active = True
     db_session.add(regular_user)
 
@@ -222,24 +198,16 @@ def test_admin_creates_user_profile(
     assert profile_data["date_of_birth"] == "1990-01-01"
     assert "avatar" in profile_data, "Avatar URL is missing!"
 
-    assert (
-        avatar_key in s3_storage_fake.storage
-    ), "Avatar file was not uploaded to Fake S3 Storage!"
-    assert (
-        s3_storage_fake.get_file_url(avatar_key) == f"http://fake-s3.local/{avatar_key}"
-    )
+    assert avatar_key in s3_storage_fake.storage, "Avatar file was not uploaded to Fake S3 Storage!"
+    assert s3_storage_fake.get_file_url(avatar_key) == f"http://fake-s3.local/{avatar_key}"
 
-    profile_in_db = (
-        db_session.query(UserProfileModel).filter_by(user_id=regular_user.id).first()
-    )
+    profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=regular_user.id).first()
     assert profile_in_db, f"Profile for user {regular_user.id} should exist!"
 
     assert profile_in_db.first_name == "john", "First name is incorrect!"
     assert profile_in_db.last_name == "doe", "Last name is incorrect!"
     assert profile_in_db.gender == "man", "Gender is incorrect!"
-    assert (
-        str(profile_in_db.date_of_birth) == "1990-01-01"
-    ), "Date of birth is incorrect!"
+    assert str(profile_in_db.date_of_birth) == "1990-01-01", "Date of birth is incorrect!"
     assert profile_in_db.info == "Test profile.", "Profile info is incorrect!"
     assert profile_in_db.avatar == avatar_key, "Avatar key in database does not match!"
 
@@ -258,15 +226,11 @@ def test_user_cannot_create_another_user_profile(
     4. Verify that the request fails with 403 Forbidden.
     """
 
-    user_1 = UserModel.create(
-        email="user1@mate.com", raw_password="User1Pass123!", group_id=1
-    )  # 1 = User
+    user_1 = UserModel.create(email="user1@mate.com", raw_password="User1Pass123!", group_id=1)  # 1 = User
     user_1.is_active = True
     db_session.add(user_1)
 
-    user_2 = UserModel.create(
-        email="user2@mate.com", raw_password="User2Pass123!", group_id=1
-    )  # 1 = User
+    user_2 = UserModel.create(email="user2@mate.com", raw_password="User2Pass123!", group_id=1)  # 1 = User
     user_2.is_active = True
     db_session.add(user_2)
 
@@ -297,9 +261,7 @@ def test_user_cannot_create_another_user_profile(
         response.json()["detail"] == "You don't have permission to edit this profile."
     ), f"Unexpected error message: {response.json()['detail']}"
 
-    profile_in_db = (
-        db_session.query(UserProfileModel).filter_by(user_id=user_2.id).first()
-    )
+    profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user_2.id).first()
     assert profile_in_db is None, "Profile should not have been created!"
 
 
@@ -317,9 +279,7 @@ def test_inactive_user_cannot_create_profile(
     4. Verify that the request fails with 401 Unauthorized.
     """
 
-    user = UserModel.create(
-        email="inactive@mate.com", raw_password="TestPassword123!", group_id=1
-    )  # 1 = User
+    user = UserModel.create(email="inactive@mate.com", raw_password="TestPassword123!", group_id=1)  # 1 = User
     user.is_active = False
     db_session.add(user)
     db_session.commit()
@@ -349,16 +309,12 @@ def test_inactive_user_cannot_create_profile(
         response.json()["detail"] == "User not found or not active."
     ), f"Unexpected error message: {response.json()['detail']}"
 
-    profile_in_db = (
-        db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
-    )
+    profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
     assert profile_in_db is None, "Profile should not have been created!"
 
 
 @pytest.mark.unit
-def test_cannot_create_profile_twice(
-    db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
-):
+def test_cannot_create_profile_twice(db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client):
     """
     Test that a user cannot create a profile twice.
 
@@ -369,9 +325,7 @@ def test_cannot_create_profile_twice(
     4. Verify that the request fails with 400 Bad Request.
     """
 
-    user = UserModel.create(
-        email="test@mate.com", raw_password="TestPassword123!", group_id=1
-    )
+    user = UserModel.create(email="test@mate.com", raw_password="TestPassword123!", group_id=1)
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -404,9 +358,7 @@ def test_cannot_create_profile_twice(
         response2.json()["detail"] == "User already has a profile."
     ), f"Unexpected error message: {response2.json()['detail']}"
 
-    profiles_count = (
-        db_session.query(UserProfileModel).filter_by(user_id=user.id).count()
-    )
+    profiles_count = db_session.query(UserProfileModel).filter_by(user_id=user.id).count()
     assert profiles_count == 1, f"Expected only one profile, but found {profiles_count}"
 
 
@@ -424,9 +376,7 @@ def test_profile_creation_fails_on_s3_upload_error(
     4. Verify that the request fails with 500 Internal Server Error.
     """
 
-    user = UserModel.create(
-        email="test@mate.com", raw_password="TestPassword123!", group_id=1
-    )
+    user = UserModel.create(email="test@mate.com", raw_password="TestPassword123!", group_id=1)
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -461,9 +411,7 @@ def test_profile_creation_fails_on_s3_upload_error(
         response.json()["detail"] == "Failed to upload avatar. Please try again later."
     ), f"Unexpected error message: {response.json()['detail']}"
 
-    profile_in_db = (
-        db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
-    )
+    profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
     assert profile_in_db is None, "Profile should not be created when S3 upload fails!"
 
 
@@ -475,9 +423,7 @@ def test_profile_creation_fails_on_s3_upload_error(
         ("John", "Doe1", "Doe1 contains non-english letters"),
     ],
 )
-def test_profile_creation_invalid_name(
-    client, jwt_manager, first_name, last_name, expected_error
-):
+def test_profile_creation_invalid_name(client, jwt_manager, first_name, last_name, expected_error):
     """
     Test that profile creation fails if the first_name or last_name contains non-English letters.
     """
@@ -498,9 +444,7 @@ def test_profile_creation_invalid_name(
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert expected_error in str(
-        response.json()
-    ), f"Unexpected error message: {response.json()}"
+    assert expected_error in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -525,9 +469,7 @@ def test_profile_creation_invalid_avatar_format(client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Invalid image format" in str(
-        response.json()
-    ), f"Unexpected error message: {response.json()}"
+    assert "Invalid image format" in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -557,9 +499,7 @@ def test_profile_creation_avatar_too_large(db_session, client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Image size exceeds 1 MB" in str(
-        response.json()
-    ), f"Unexpected error message: {response.json()}"
+    assert "Image size exceeds 1 MB" in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -584,9 +524,7 @@ def test_profile_creation_invalid_gender(client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Gender must be one of" in str(
-        response.json()
-    ), f"Unexpected error message: {response.json()}"
+    assert "Gender must be one of" in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -597,9 +535,7 @@ def test_profile_creation_invalid_gender(client, jwt_manager):
         ("2010-01-01", "You must be at least 18 years old to register."),
     ],
 )
-def test_profile_creation_invalid_birth_date(
-    client, jwt_manager, birth_date, expected_error
-):
+def test_profile_creation_invalid_birth_date(client, jwt_manager, birth_date, expected_error):
     """
     Test that profile creation fails if birth_date is invalid.
     """
@@ -620,9 +556,7 @@ def test_profile_creation_invalid_birth_date(
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert expected_error in str(
-        response.json()
-    ), f"Unexpected error message: {response.json()}"
+    assert expected_error in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
