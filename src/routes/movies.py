@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
@@ -58,20 +58,26 @@ router = APIRouter()
     },
     tags=["Movies", "All"],
 )
-def get_movie_list(
+async def get_movie_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
     per_page: int = Query(10, ge=1, le=20, description="Number of items per page"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> MovieListResponseSchema:
     """
-    Fetch a paginated list of movies from the database.
+    Asynchronously fetch a paginated list of movies from the database.
     """
     offset = (page - 1) * per_page
 
-    query = db.query(MovieModel).order_by(MovieModel.year.desc())
+    total_items_result = await db.execute(select(func.count()).select_from(MovieModel))
+    total_items = total_items_result.scalar_one()
 
-    total_items = query.count()
-    movies = query.offset(offset).limit(per_page).all()
+    result = await db.execute(
+        select(MovieModel)
+        .order_by(MovieModel.year.desc())
+        .offset(offset)
+        .limit(per_page)
+    )
+    movies = result.scalars().all()
 
     if not movies:
         raise HTTPException(status_code=404, detail="No movies found.")
@@ -82,16 +88,8 @@ def get_movie_list(
 
     response = MovieListResponseSchema(
         movies=movie_list,
-        prev_page=(
-            f"/theater/movies/?page={page - 1}&per_page={per_page}"
-            if page > 1
-            else None
-        ),
-        next_page=(
-            f"/theater/movies/?page={page + 1}&per_page={per_page}"
-            if page < total_pages
-            else None
-        ),
+        prev_page=f"/theater/movies/?page={page - 1}&per_page={per_page}" if page > 1 else None,
+        next_page=f"/theater/movies/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -123,59 +121,69 @@ def get_movie_list(
     status_code=status.HTTP_201_CREATED,
     tags=["Movies", "Create"],
 )
-def create_movie(
-    movie_data: MovieCreateSchema, db: Session = Depends(get_db)
+async def create_movie(
+    movie_data: MovieCreateSchema,
+    db: AsyncSession = Depends(get_db),
 ) -> MovieDetailSchema:
     """
-    Add a new movie to the database.
+    Asynchronously add a new movie to the database.
+    Checks for duplicates and automatically links or creates associated entities
+    such as director, certification, genres, and stars.
     """
-    existing_movie = (
-        db.query(MovieModel)
-        .filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year)
-        .first()
+    result = await db.execute(
+        select(MovieModel).filter(
+            MovieModel.name == movie_data.name,
+            MovieModel.year == movie_data.year
+        )
     )
-
+    existing_movie = result.scalars().first()
     if existing_movie:
         raise HTTPException(
             status_code=409,
-            detail=f"A movie with the name '{movie_data.name}' and year '{movie_data.year}' already exists.",
+            detail=f"A movie with the name '{movie_data.name}' and year '{movie_data.year}' already exists."
         )
 
     try:
-        director = (
-            db.query(DirectorModel).filter_by(name=movie_data.director.name).first()
+        result = await db.execute(
+            select(DirectorModel).filter(DirectorModel.name == movie_data.director.name)
         )
+        director = result.scalars().first()
         if not director:
             director = DirectorModel(name=movie_data.director.name)
             db.add(director)
-            db.flush()
+            await db.flush()
 
-        certification = (
-            db.query(CertificationModel)
-            .filter_by(name=movie_data.certification.name)
-            .first()
+        result = await db.execute(
+            select(CertificationModel).filter(CertificationModel.name == movie_data.certification.name)
         )
+        certification = result.scalars().first()
         if not certification:
             certification = CertificationModel(name=movie_data.certification.name)
             db.add(certification)
-            db.flush()
+            await db.flush()
 
         genres = []
         for genre_name in movie_data.genres:
-            genre = db.query(GenreModel).filter_by(name=genre_name).first()
+            result = await db.execute(
+                select(GenreModel).filter(GenreModel.name == genre_name)
+            )
+            genre = result.scalars().first()
             if not genre:
                 genre = GenreModel(name=genre_name)
                 db.add(genre)
-                db.flush()
+                await db.flush()
             genres.append(genre)
 
         stars = []
         for star_name in movie_data.stars:
-            star = db.query(StarModel).filter_by(name=star_name).first()
+            result = await db.execute(
+                select(StarModel).filter(StarModel.name == star_name)
+            )
+            star = result.scalars().first()
             if not star:
                 star = StarModel(name=star_name)
                 db.add(star)
-                db.flush()
+                await db.flush()
             stars.append(star)
 
         movie = MovieModel(
@@ -194,12 +202,12 @@ def create_movie(
             stars=stars,
         )
         db.add(movie)
-        db.commit()
-        db.refresh(movie)
+        await db.commit()
+        await db.refresh(movie)
 
         return MovieDetailSchema.model_validate(movie)
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=400, detail="Invalid input data.")
 
 
@@ -225,15 +233,15 @@ def create_movie(
     },
     tags=["Movies", "ID_search"],
 )
-def get_movie_by_id(
+async def get_movie_by_id(
     movie_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> MovieDetailSchema:
     """
-    Retrieve detailed information about a specific movie by its ID.
+    Asynchronously retrieve detailed information about a specific movie by its ID.
     """
-    movie = (
-        db.query(MovieModel)
+    result = await db.execute(
+        select(MovieModel)
         .options(
             joinedload(MovieModel.director),
             joinedload(MovieModel.certification),
@@ -241,8 +249,9 @@ def get_movie_by_id(
             joinedload(MovieModel.stars),
         )
         .filter(MovieModel.id == movie_id)
-        .first()
     )
+
+    movie = result.scalars().first()
 
     if not movie:
         raise HTTPException(
@@ -275,27 +284,32 @@ def get_movie_by_id(
     tags=["Movies", "Delete"],
 )
 @router.delete("/movies/{movie_id}/", summary="Delete a movie by ID")
-def delete_movie(
+async def delete_movie(
         movie_id: int,
-        db: Session = Depends(get_db),
+        db: AsyncSession = Depends(get_db),
 ):
     """
-    Delete a specific movie by its ID.
+    Asynchronously delete a specific movie by its ID.
     Prevent deletion if at least one order item (purchase) exists for the movie.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
+
     if not movie:
         raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
 
-    order_items_count = db.query(OrderItemModel).filter(OrderItemModel.movie_id == movie_id).count()
+    result = await db.execute(select(OrderItemModel).filter(OrderItemModel.movie_id == movie_id))
+    order_items_count = len(result.scalars().all())
+
     if order_items_count > 0:
         raise HTTPException(
             status_code=400,
             detail="Cannot delete movie, it has been purchased by at least one user."
         )
 
-    db.delete(movie)
-    db.commit()
+    await db.delete(movie)
+    await db.commit()
+
     return {"detail": "Movie deleted successfully."}
 
 
@@ -327,26 +341,28 @@ def delete_movie(
     },
     tags=["Movies", "Update"],
 )
-def update_movie(
+@router.put("/movies/{movie_id}/", summary="Update a movie by ID")
+async def update_movie(
     movie_id: int,
     movie_data: MovieUpdateSchema,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
     """
-    Update a specific movie by its ID.
+    Asynchronously update a specific movie by its ID.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
 
     if not movie:
         raise HTTPException(
             status_code=404, detail="Movie with the given ID was not found."
         )
 
-    for key, value in movie_data.dict(exclude_unset=True).items():
+    for key, value in movie_data.model_dump(exclude_unset=True).items():
         setattr(movie, key, value)
 
-    db.commit()
-    db.refresh(movie)
+    await db.commit()
+    await db.refresh(movie)
 
     return MovieDetailSchema.model_validate(movie)
 
