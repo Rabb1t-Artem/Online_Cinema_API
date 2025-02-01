@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import  joinedload
 from starlette import status
 
 from database import get_db, UserModel
@@ -283,7 +283,6 @@ async def get_movie_by_id(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Movies", "Delete"],
 )
-@router.delete("/movies/{movie_id}/", summary="Delete a movie by ID")
 async def delete_movie(
         movie_id: int,
         db: AsyncSession = Depends(get_db),
@@ -341,7 +340,6 @@ async def delete_movie(
     },
     tags=["Movies", "Update"],
 )
-@router.put("/movies/{movie_id}/", summary="Update a movie by ID")
 async def update_movie(
     movie_id: int,
     movie_data: MovieUpdateSchema,
@@ -373,28 +371,29 @@ async def update_movie(
     response_model=MovieLikeSchema,
     tags=["Movies", "Likes"],
 )
-def like_movie(
+async def like_movie(
     movie_id: int,
     is_liked: bool,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """
-    Like or dislike a specific movie.
+    Asynchronously like or dislike a specific movie.
     If the movie is already liked/disliked, update the status.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    like_entry = (
-        db.query(MovieLikeModel)
+    result = await db.execute(
+        select(MovieLikeModel)
         .filter(
             MovieLikeModel.movie_id == movie_id,
             MovieLikeModel.user_id == current_user.id,
         )
-        .first()
     )
+    like_entry = result.scalars().first()
 
     if like_entry:
         like_entry.is_liked = is_liked
@@ -404,7 +403,7 @@ def like_movie(
         )
         db.add(new_like)
 
-    db.commit()
+    await db.commit()
     return {"message": "Movie like status updated successfully", "is_liked": is_liked}
 
 
@@ -413,19 +412,20 @@ def like_movie(
     summary="Get like/dislike count for a movie",
     tags=["Movies", "Likes"],
 )
-def get_movie_likes(movie_id: int, db: Session = Depends(get_db)):
+async def get_movie_likes(movie_id: int, db: AsyncSession = Depends(get_db)):
     """
-    Get the count of likes and dislikes for a specific movie.
+    Asynchronously get the count of likes and dislikes for a specific movie.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    likes_count = (
-        db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
+    likes_count = await db.scalar(
+        select(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
     )
-    dislikes_count = (
-        db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
+    dislikes_count = await db.scalar(
+        select(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
     )
 
     return {"movie_id": movie_id, "likes": likes_count, "dislikes": dislikes_count}
@@ -436,16 +436,17 @@ def get_movie_likes(movie_id: int, db: Session = Depends(get_db)):
     response_model=MovieCommentSchema,
     tags=["Movies", "Comments"],
 )
-def add_comment(
+async def add_comment(
     movie_id: int,
     comment_data: MovieCommentCreateSchema,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """
-    Add a comment to a movie.
+    Asynchronously add a comment to a movie.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
@@ -453,8 +454,9 @@ def add_comment(
         movie_id=movie_id, user_id=current_user.id, content=comment_data.content
     )
     db.add(comment)
-    db.commit()
-    db.refresh(comment)
+    await db.commit()
+    await db.refresh(comment)
+
     return comment
 
 
@@ -463,17 +465,18 @@ def add_comment(
     response_model=List[MovieCommentSchema],
     tags=["Movies", "Comments"],
 )
-def get_comments(movie_id: int, db: Session = Depends(get_db)):
+async def get_comments(movie_id: int, db: AsyncSession = Depends(get_db)):
     """
-    Retrieve comments for a specific movie.
+    Asynchronously retrieve comments for a specific movie.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    comments = (
-        db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
-    )
+    result = await db.execute(select(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id))
+    comments = result.scalars().all()
+
     return comments
 
 
@@ -483,33 +486,33 @@ def get_comments(movie_id: int, db: Session = Depends(get_db)):
     tags=["Movies", "Favorites"],
     response_model=FavoriteMovieResponseSchema,
 )
-def add_to_favorites(
+async def add_to_favorites(
     movie_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """
-    Add a movie to the favorites list of the current user.
+    Asynchronously add a movie to the favorites list of the current user.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    favorite = (
-        db.query(FavoriteMovieModel)
-        .filter(
+    result = await db.execute(
+        select(FavoriteMovieModel).filter(
             FavoriteMovieModel.movie_id == movie_id,
             FavoriteMovieModel.user_id == current_user.id,
         )
-        .first()
     )
+    favorite = result.scalars().first()
 
     if favorite:
         raise HTTPException(status_code=400, detail="Movie is already in favorites.")
 
     new_favorite = FavoriteMovieModel(user_id=current_user.id, movie_id=movie_id)
     db.add(new_favorite)
-    db.commit()
+    await db.commit()
 
     return {"message": "Movie added to favorites."}
 
@@ -520,28 +523,27 @@ def add_to_favorites(
     tags=["Movies", "Favorites"],
     response_model=FavoriteMovieResponseSchema,
 )
-def remove_from_favorites(
+async def remove_from_favorites(
     movie_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """
-    Remove a movie from the favorites list of the current user.
+    Asynchronously remove a movie from the favorites list of the current user.
     """
-    favorite = (
-        db.query(FavoriteMovieModel)
-        .filter(
+    result = await db.execute(
+        select(FavoriteMovieModel).filter(
             FavoriteMovieModel.movie_id == movie_id,
             FavoriteMovieModel.user_id == current_user.id,
         )
-        .first()
     )
+    favorite = result.scalars().first()
 
     if not favorite:
         raise HTTPException(status_code=404, detail="Movie not in favorites.")
 
-    db.delete(favorite)
-    db.commit()
+    await db.delete(favorite)
+    await db.commit()
 
     return {"message": "Movie removed from favorites."}
 
@@ -552,17 +554,17 @@ def remove_from_favorites(
     tags=["Movies", "Favorites"],
     response_model=FavoriteMovieListSchema,
 )
-def get_favorite_movies(
+async def get_favorite_movies(
     search: Optional[str] = None,
     sort_by: Optional[str] = "name",
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """
-    Get the list of favorite movies with optional search, filter, and sort options.
+    Asynchronously get the list of favorite movies with optional search, filter, and sort options.
     """
     query = (
-        db.query(MovieModel)
+        select(MovieModel)
         .join(FavoriteMovieModel)
         .filter(FavoriteMovieModel.user_id == current_user.id)
     )
@@ -576,7 +578,8 @@ def get_favorite_movies(
         elif sort_by == "release_date":
             query = query.order_by(MovieModel.release_date)
 
-    favorite_movies = query.all()
+    result = await db.execute(query)
+    favorite_movies = result.scalars().all()
 
     return favorite_movies
 
@@ -584,10 +587,10 @@ def get_favorite_movies(
 @router.post(
     "/movies/{movie_id}/rating/", summary="Rate a movie", tags=["Movies", "Rating"]
 )
-def rate_movie(
+async def rate_movie(
     movie_id: int,
     rating: float,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: UserModel = Depends(get_current_user),
 ):
     """
@@ -596,18 +599,17 @@ def rate_movie(
     if rating < 1 or rating > 10:
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 10.")
 
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    existing_rating = (
-        db.query(MovieRatingModel)
-        .filter(
-            MovieRatingModel.movie_id == movie_id,
-            MovieRatingModel.user_id == current_user.id,
+    result = await db.execute(
+        select(MovieRatingModel).filter(
+            MovieRatingModel.movie_id == movie_id, MovieRatingModel.user_id == current_user.id
         )
-        .first()
     )
+    existing_rating = result.scalars().first()
 
     if existing_rating:
         existing_rating.rating = rating
@@ -617,7 +619,7 @@ def rate_movie(
         )
         db.add(new_rating)
 
-    db.commit()
+    await db.commit()
 
     return {"message": "Rating added/updated successfully."}
 
@@ -627,11 +629,16 @@ def rate_movie(
     summary="Get the average rating of a movie",
     tags=["Movies", "Rating"],
 )
-def get_movie_rating(movie_id: int, db: Session = Depends(get_db)):
+async def get_movie_rating(
+    movie_id: int,
+    db: AsyncSession = Depends(get_db),
+):
     """
     Get the average rating of a movie.
     """
-    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
+
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
