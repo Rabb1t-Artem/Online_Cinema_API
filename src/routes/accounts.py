@@ -251,7 +251,7 @@ def request_password_reset_token(
     If the user exists and is active, invalidates any existing password reset tokens and generates a new one.
     Always responds with a success message to avoid leaking user information.
     """
-    user = db.execute(select(UserModel)).filter_by(email=data.email).first()
+    user = await db.execute(select(UserModel)).filter_by(email=data.email).first()
 
     if not user or not user.is_active:
         return MessageResponseSchema(
