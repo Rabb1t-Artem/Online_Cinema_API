@@ -1,12 +1,13 @@
-import datetime
-from enum import Enum
 from typing import Optional, List
 import uuid
 
-from sqlalchemy import String, Float, Text, DECIMAL, UniqueConstraint, ForeignKey, Table, Column, Integer
+from datetime import datetime
+
+from sqlalchemy import String, Float, Text, DECIMAL, UniqueConstraint, ForeignKey, Table, Column, Integer, Boolean, \
+    DateTime
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
-from database import Base
+from database import Base, UserModel
 from database.models.orders import OrderItemModel
 
 
@@ -132,8 +133,16 @@ class MovieModel(Base):
     directors: Mapped[list["DirectorModel"]] = relationship(
         "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
+    likes = relationship("MovieLikeModel", back_populates="movies", cascade="all, delete-orphan")
+    ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
 
     __table_args__ = (UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),)
+
+    @property
+    def average_rating(self):
+        if not self.ratings:
+            return None
+        return sum(rating.rating for rating in self.ratings) / len(self.ratings)
 
     @classmethod
     def default_order_by(cls):
@@ -141,3 +150,60 @@ class MovieModel(Base):
 
     def __repr__(self):
         return f"<Movie(name='{self.name}', release_year='{self.year}', score={self.imdb})>"
+
+
+class MovieLikeModel(Base):
+    __tablename__ = "movie_likes"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
+    is_liked = Column(Boolean, nullable=False, default=False)
+
+    movie = relationship("MovieModel", back_populates="likes")
+    user = relationship("UserModel", back_populates="likes")
+
+
+    __table_args__ = (UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),)
+
+
+class MovieCommentModel(Base):
+    __tablename__ = "movie_comments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content = Column(String(500), nullable=False)
+    created_at = Column(DateTime, default=datetime.UTC)
+
+    movie = relationship("MovieModel", back_populates="comments")
+    user = relationship("UserModel", back_populates="comments")
+
+
+class FavoriteMovieModel(Base):
+    __tablename__ = "favorite_movies"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
+
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="favorites")
+    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="favorites")
+
+    def __repr__(self):
+        return f"<FavoriteMovie(user_id={self.user_id}, movie_id={self.movie_id})>"
+
+
+class MovieRatingModel(Base):
+    __tablename__ = "movie_ratings"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    rating: Mapped[float] = mapped_column(Float, nullable=False)
+
+    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="ratings")
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="ratings")
+
+    __table_args__ = (UniqueConstraint("movie_id", "user_id", name="unique_movie_user_rating_constraint"),)
+

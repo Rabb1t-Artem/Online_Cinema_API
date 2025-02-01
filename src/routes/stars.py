@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from starlette import status
 
 from database import get_db
 from database.models.movies import StarModel
@@ -30,6 +31,7 @@ router = APIRouter()
             "content": {"application/json": {"example": {"detail": "No stars found."}}},
         }
     },
+    tags=["Stars"]
 )
 def get_star_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -80,7 +82,8 @@ def get_star_list(
             "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
         },
     },
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Stars", "Create"]
 )
 def create_star(star_data: StarCreateSchema, db: Session = Depends(get_db)) -> StarDetailSchema:
     """
@@ -118,6 +121,7 @@ def create_star(star_data: StarCreateSchema, db: Session = Depends(get_db)) -> S
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         }
     },
+    tags=["Stats", "ID_find"]
 )
 def get_star_by_id(
     star_id: int,
@@ -149,7 +153,8 @@ def get_star_by_id(
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Stars", "Delete"]
 )
 def delete_star(
     star_id: int,
@@ -186,6 +191,7 @@ def delete_star(
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
+    tags=["Stars", "Update"]
 )
 def update_star(
     star_id: int,
