@@ -48,12 +48,16 @@ class CSVDatabaseSeeder:
         data["crew"] = data["crew"].fillna("Unknown")
         data["crew"] = data["crew"].str.replace(r"\s+", "", regex=True)
         data["crew"] = data["crew"].apply(
-            lambda crew: ",".join(sorted(set(crew.split(",")))) if crew != "Unknown" else crew
+            lambda crew: (
+                ",".join(sorted(set(crew.split(",")))) if crew != "Unknown" else crew
+            )
         )
         data["genre"] = data["genre"].fillna("Unknown")
-        data["genre"] = data["genre"].str.replace("\u00A0", "", regex=True)
+        data["genre"] = data["genre"].str.replace("\u00a0", "", regex=True)
         data["date_x"] = data["date_x"].str.strip()
-        data["date_x"] = pd.to_datetime(data["date_x"], format="%Y-%m-%d", errors="raise")
+        data["date_x"] = pd.to_datetime(
+            data["date_x"], format="%Y-%m-%d", errors="raise"
+        )
         data["date_x"] = data["date_x"].dt.date
         data["orig_lang"] = data["orig_lang"].str.replace(r"\s+", "", regex=True)
         data["status"] = data["status"].str.strip()
@@ -64,8 +68,12 @@ class CSVDatabaseSeeder:
         return data
 
     async def _get_or_create_bulk(self, model, items: list, unique_field: str):
-        existing = await self._db_session.execute(model.select().where(getattr(model, unique_field).in_(items)))
-        existing_dict = {getattr(item, unique_field): item for item in existing.scalars().all()}
+        existing = await self._db_session.execute(
+            model.select().where(getattr(model, unique_field).in_(items))
+        )
+        existing_dict = {
+            getattr(item, unique_field): item for item in existing.scalars().all()
+        }
 
         new_items = [item for item in items if item not in existing_dict]
         new_records = [{unique_field: item} for item in new_items]
@@ -77,7 +85,12 @@ class CSVDatabaseSeeder:
             newly_inserted = await self._db_session.execute(
                 model.select().where(getattr(model, unique_field).in_(new_items))
             )
-            existing_dict.update({getattr(item, unique_field): item for item in newly_inserted.scalars().all()})
+            existing_dict.update(
+                {
+                    getattr(item, unique_field): item
+                    for item in newly_inserted.scalars().all()
+                }
+            )
 
         return existing_dict
 
@@ -90,26 +103,45 @@ class CSVDatabaseSeeder:
 
                 countries = data["country"].unique()
                 genres = set(
-                    genre.strip() for genres in data["genre"].dropna() for genre in genres.split(",") if genre.strip()
+                    genre.strip()
+                    for genres in data["genre"].dropna()
+                    for genre in genres.split(",")
+                    if genre.strip()
                 )
                 actors = set(
-                    actor.strip() for crew in data["crew"].dropna() for actor in crew.split(",") if actor.strip()
+                    actor.strip()
+                    for crew in data["crew"].dropna()
+                    for actor in crew.split(",")
+                    if actor.strip()
                 )
                 languages = set(
-                    lang.strip() for langs in data["orig_lang"].dropna() for lang in langs.split(",") if lang.strip()
+                    lang.strip()
+                    for langs in data["orig_lang"].dropna()
+                    for lang in langs.split(",")
+                    if lang.strip()
                 )
 
-                country_map = await self._get_or_create_bulk(CountryModel, countries, "code")
-                genre_map = await self._get_or_create_bulk(GenreModel, list(genres), "name")
-                actor_map = await self._get_or_create_bulk(ActorModel, list(actors), "name")
-                language_map = await self._get_or_create_bulk(LanguageModel, list(languages), "name")
+                country_map = await self._get_or_create_bulk(
+                    CountryModel, countries, "code"
+                )
+                genre_map = await self._get_or_create_bulk(
+                    GenreModel, list(genres), "name"
+                )
+                actor_map = await self._get_or_create_bulk(
+                    ActorModel, list(actors), "name"
+                )
+                language_map = await self._get_or_create_bulk(
+                    LanguageModel, list(languages), "name"
+                )
 
                 movies_data = []
                 movie_genres_data = []
                 movie_actors_data = []
                 movie_languages_data = []
 
-                for _, row in tqdm(data.iterrows(), total=data.shape[0], desc="Processing movies"):
+                for _, row in tqdm(
+                    data.iterrows(), total=data.shape[0], desc="Processing movies"
+                ):
                     country = country_map[row["country"]]
 
                     movie = {
@@ -124,32 +156,50 @@ class CSVDatabaseSeeder:
                     }
                     movies_data.append(movie)
 
-                result = await self._db_session.execute(insert(MovieModel).returning(MovieModel.id), movies_data)
+                result = await self._db_session.execute(
+                    insert(MovieModel).returning(MovieModel.id), movies_data
+                )
                 movie_ids = result.scalars().all()
 
                 for i, (_, row) in enumerate(
-                    tqdm(data.iterrows(), total=data.shape[0], desc="Processing associations")
+                    tqdm(
+                        data.iterrows(),
+                        total=data.shape[0],
+                        desc="Processing associations",
+                    )
                 ):
                     movie_id = movie_ids[i]
 
                     for genre_name in row["genre"].split(","):
                         if genre_name.strip():
                             genre = genre_map[genre_name.strip()]
-                            movie_genres_data.append({"movie_id": movie_id, "genre_id": genre.id})
+                            movie_genres_data.append(
+                                {"movie_id": movie_id, "genre_id": genre.id}
+                            )
 
                     for actor_name in row["crew"].split(","):
                         if actor_name.strip():
                             actor = actor_map[actor_name.strip()]
-                            movie_actors_data.append({"movie_id": movie_id, "actor_id": actor.id})
+                            movie_actors_data.append(
+                                {"movie_id": movie_id, "actor_id": actor.id}
+                            )
 
                     for lang_name in row["orig_lang"].split(","):
                         if lang_name.strip():
                             language = language_map[lang_name.strip()]
-                            movie_languages_data.append({"movie_id": movie_id, "language_id": language.id})
+                            movie_languages_data.append(
+                                {"movie_id": movie_id, "language_id": language.id}
+                            )
 
-                await self._db_session.execute(insert(MoviesGenresModel).values(movie_genres_data))
-                await self._db_session.execute(insert(ActorsMoviesModel).values(movie_actors_data))
-                await self._db_session.execute(insert(MoviesLanguagesModel).values(movie_languages_data))
+                await self._db_session.execute(
+                    insert(MoviesGenresModel).values(movie_genres_data)
+                )
+                await self._db_session.execute(
+                    insert(ActorsMoviesModel).values(movie_actors_data)
+                )
+                await self._db_session.execute(
+                    insert(MoviesLanguagesModel).values(movie_languages_data)
+                )
                 await self._db_session.commit()
 
         except SQLAlchemyError as e:

@@ -47,7 +47,9 @@ def profile(
     except ValueError as err:
         raise HTTPException(status_code=422, detail=str(err))
 
-    token_user = db.query(UserModel).filter(UserModel.id == access_token.get("user_id")).first()
+    token_user = (
+        db.query(UserModel).filter(UserModel.id == access_token.get("user_id")).first()
+    )
 
     if user_id != token_user.id and token_user.group.name.value != "admin":
         raise HTTPException(

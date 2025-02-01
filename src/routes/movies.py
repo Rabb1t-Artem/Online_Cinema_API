@@ -11,7 +11,11 @@ from database.models.movies import (
     GenreModel,
     DirectorModel,
     CertificationModel,
-    StarModel, MovieLikeModel, MovieCommentModel, FavoriteMovieModel, MovieRatingModel,
+    StarModel,
+    MovieLikeModel,
+    MovieCommentModel,
+    FavoriteMovieModel,
+    MovieRatingModel,
 )
 from schemas import (
     MovieListResponseSchema,
@@ -20,7 +24,13 @@ from schemas import (
     MovieCreateSchema,
     MovieUpdateSchema,
 )
-from schemas.movies import MovieLikeSchema, MovieCommentCreateSchema, MovieCommentSchema, FavoriteMovieListSchema, FavoriteMovieResponseSchema
+from schemas.movies import (
+    MovieLikeSchema,
+    MovieCommentCreateSchema,
+    MovieCommentSchema,
+    FavoriteMovieListSchema,
+    FavoriteMovieResponseSchema,
+)
 
 router = APIRouter()
 
@@ -38,10 +48,12 @@ router = APIRouter()
     responses={
         404: {
             "description": "No movies found.",
-            "content": {"application/json": {"example": {"detail": "No movies found."}}},
+            "content": {
+                "application/json": {"example": {"detail": "No movies found."}}
+            },
         }
     },
-    tags=["Movies", "All"]
+    tags=["Movies", "All"],
 )
 def get_movie_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -67,8 +79,16 @@ def get_movie_list(
 
     response = MovieListResponseSchema(
         movies=movie_list,
-        prev_page=f"/theater/movies/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/theater/movies/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=(
+            f"/theater/movies/?page={page - 1}&per_page={per_page}"
+            if page > 1
+            else None
+        ),
+        next_page=(
+            f"/theater/movies/?page={page + 1}&per_page={per_page}"
+            if page < total_pages
+            else None
+        ),
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -92,18 +112,24 @@ def get_movie_list(
         },
         400: {
             "description": "Invalid input.",
-            "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
+            "content": {
+                "application/json": {"example": {"detail": "Invalid input data."}}
+            },
         },
     },
     status_code=status.HTTP_201_CREATED,
-    tags=["Movies", "Create"]
+    tags=["Movies", "Create"],
 )
-def create_movie(movie_data: MovieCreateSchema, db: Session = Depends(get_db)) -> MovieDetailSchema:
+def create_movie(
+    movie_data: MovieCreateSchema, db: Session = Depends(get_db)
+) -> MovieDetailSchema:
     """
     Add a new movie to the database.
     """
     existing_movie = (
-        db.query(MovieModel).filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year).first()
+        db.query(MovieModel)
+        .filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year)
+        .first()
     )
 
     if existing_movie:
@@ -113,13 +139,19 @@ def create_movie(movie_data: MovieCreateSchema, db: Session = Depends(get_db)) -
         )
 
     try:
-        director = db.query(DirectorModel).filter_by(name=movie_data.director.name).first()
+        director = (
+            db.query(DirectorModel).filter_by(name=movie_data.director.name).first()
+        )
         if not director:
             director = DirectorModel(name=movie_data.director.name)
             db.add(director)
             db.flush()
 
-        certification = db.query(CertificationModel).filter_by(name=movie_data.certification.name).first()
+        certification = (
+            db.query(CertificationModel)
+            .filter_by(name=movie_data.certification.name)
+            .first()
+        )
         if not certification:
             certification = CertificationModel(name=movie_data.certification.name)
             db.add(certification)
@@ -181,10 +213,14 @@ def create_movie(movie_data: MovieCreateSchema, db: Session = Depends(get_db)) -
     responses={
         404: {
             "description": "Movie not found.",
-            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Movie with the given ID was not found."}
+                }
+            },
         }
     },
-    tags=["Movies", "ID_search"]
+    tags=["Movies", "ID_search"],
 )
 def get_movie_by_id(
     movie_id: int,
@@ -206,7 +242,9 @@ def get_movie_by_id(
     )
 
     if not movie:
-        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
+        raise HTTPException(
+            status_code=404, detail="Movie with the given ID was not found."
+        )
 
     return MovieDetailSchema.model_validate(movie)
 
@@ -223,7 +261,11 @@ def get_movie_by_id(
         204: {"description": "Movie deleted successfully."},
         404: {
             "description": "Movie not found.",
-            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Movie with the given ID was not found."}
+                }
+            },
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
@@ -239,7 +281,9 @@ def delete_movie(
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
 
     if not movie:
-        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
+        raise HTTPException(
+            status_code=404, detail="Movie with the given ID was not found."
+        )
 
     db.delete(movie)
     db.commit()
@@ -257,11 +301,19 @@ def delete_movie(
     responses={
         200: {
             "description": "Movie updated successfully.",
-            "content": {"application/json": {"example": {"detail": "Movie updated successfully."}}},
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Movie updated successfully."}
+                }
+            },
         },
         404: {
             "description": "Movie not found.",
-            "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Movie with the given ID was not found."}
+                }
+            },
         },
     },
     tags=["Movies", "Update"],
@@ -277,7 +329,9 @@ def update_movie(
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
 
     if not movie:
-        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
+        raise HTTPException(
+            status_code=404, detail="Movie with the given ID was not found."
+        )
 
     for key, value in movie_data.dict(exclude_unset=True).items():
         setattr(movie, key, value)
@@ -288,16 +342,17 @@ def update_movie(
     return MovieDetailSchema.model_validate(movie)
 
 
-@router.post("/movies/{movie_id}/like/",
-             summary="Like or dislike a movie",
-             response_model=MovieLikeSchema,
-             tags=["Movies", "Likes"],
-             )
+@router.post(
+    "/movies/{movie_id}/like/",
+    summary="Like or dislike a movie",
+    response_model=MovieLikeSchema,
+    tags=["Movies", "Likes"],
+)
 def like_movie(
     movie_id: int,
     is_liked: bool,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
     Like or dislike a specific movie.
@@ -307,18 +362,20 @@ def like_movie(
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    like_entry = db.query(MovieLikeModel).filter(
-        MovieLikeModel.movie_id == movie_id,
-        MovieLikeModel.user_id == current_user.id
-    ).first()
+    like_entry = (
+        db.query(MovieLikeModel)
+        .filter(
+            MovieLikeModel.movie_id == movie_id,
+            MovieLikeModel.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if like_entry:
         like_entry.is_liked = is_liked
     else:
         new_like = MovieLikeModel(
-            user_id=current_user.id,
-            movie_id=movie_id,
-            is_liked=is_liked
+            user_id=current_user.id, movie_id=movie_id, is_liked=is_liked
         )
         db.add(new_like)
 
@@ -326,10 +383,11 @@ def like_movie(
     return {"message": "Movie like status updated successfully", "is_liked": is_liked}
 
 
-@router.get("/movies/{movie_id}/likes/",
-            summary="Get like/dislike count for a movie",
-            tags=["Movies", "Likes"],
-            )
+@router.get(
+    "/movies/{movie_id}/likes/",
+    summary="Get like/dislike count for a movie",
+    tags=["Movies", "Likes"],
+)
 def get_movie_likes(movie_id: int, db: Session = Depends(get_db)):
     """
     Get the count of likes and dislikes for a specific movie.
@@ -338,18 +396,26 @@ def get_movie_likes(movie_id: int, db: Session = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    likes_count = db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
-    dislikes_count = db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
+    likes_count = (
+        db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count()
+    )
+    dislikes_count = (
+        db.query(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count()
+    )
 
     return {"movie_id": movie_id, "likes": likes_count, "dislikes": dislikes_count}
 
 
-@router.post("/movies/{movie_id}/comments/", response_model=MovieCommentSchema, tags=["Movies", "Comments"])
+@router.post(
+    "/movies/{movie_id}/comments/",
+    response_model=MovieCommentSchema,
+    tags=["Movies", "Comments"],
+)
 def add_comment(
     movie_id: int,
     comment_data: MovieCommentCreateSchema,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
     Add a comment to a movie.
@@ -359,9 +425,7 @@ def add_comment(
         raise HTTPException(status_code=404, detail="Movie not found.")
 
     comment = MovieCommentModel(
-        movie_id=movie_id,
-        user_id=current_user.id,
-        content=comment_data.content
+        movie_id=movie_id, user_id=current_user.id, content=comment_data.content
     )
     db.add(comment)
     db.commit()
@@ -369,7 +433,11 @@ def add_comment(
     return comment
 
 
-@router.get("/movies/{movie_id}/comments/", response_model=List[MovieCommentSchema], tags=["Movies", "Comments"])
+@router.get(
+    "/movies/{movie_id}/comments/",
+    response_model=List[MovieCommentSchema],
+    tags=["Movies", "Comments"],
+)
 def get_comments(movie_id: int, db: Session = Depends(get_db)):
     """
     Retrieve comments for a specific movie.
@@ -378,7 +446,9 @@ def get_comments(movie_id: int, db: Session = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    comments = db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
+    comments = (
+        db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
+    )
     return comments
 
 
@@ -386,12 +456,12 @@ def get_comments(movie_id: int, db: Session = Depends(get_db)):
     "/movies/{movie_id}/favorites/",
     summary="Add a movie to favorites",
     tags=["Movies", "Favorites"],
-    response_model=FavoriteMovieResponseSchema
+    response_model=FavoriteMovieResponseSchema,
 )
 def add_to_favorites(
     movie_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
     Add a movie to the favorites list of the current user.
@@ -400,10 +470,14 @@ def add_to_favorites(
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    favorite = db.query(FavoriteMovieModel).filter(
-        FavoriteMovieModel.movie_id == movie_id,
-        FavoriteMovieModel.user_id == current_user.id
-    ).first()
+    favorite = (
+        db.query(FavoriteMovieModel)
+        .filter(
+            FavoriteMovieModel.movie_id == movie_id,
+            FavoriteMovieModel.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if favorite:
         raise HTTPException(status_code=400, detail="Movie is already in favorites.")
@@ -419,20 +493,24 @@ def add_to_favorites(
     "/movies/{movie_id}/favorites/",
     summary="Remove a movie from favorites",
     tags=["Movies", "Favorites"],
-    response_model=FavoriteMovieResponseSchema
+    response_model=FavoriteMovieResponseSchema,
 )
 def remove_from_favorites(
     movie_id: int,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
     Remove a movie from the favorites list of the current user.
     """
-    favorite = db.query(FavoriteMovieModel).filter(
-        FavoriteMovieModel.movie_id == movie_id,
-        FavoriteMovieModel.user_id == current_user.id
-    ).first()
+    favorite = (
+        db.query(FavoriteMovieModel)
+        .filter(
+            FavoriteMovieModel.movie_id == movie_id,
+            FavoriteMovieModel.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if not favorite:
         raise HTTPException(status_code=404, detail="Movie not in favorites.")
@@ -453,13 +531,15 @@ def get_favorite_movies(
     search: Optional[str] = None,
     sort_by: Optional[str] = "name",
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
     Get the list of favorite movies with optional search, filter, and sort options.
     """
-    query = db.query(MovieModel).join(FavoriteMovieModel).filter(
-        FavoriteMovieModel.user_id == current_user.id
+    query = (
+        db.query(MovieModel)
+        .join(FavoriteMovieModel)
+        .filter(FavoriteMovieModel.user_id == current_user.id)
     )
 
     if search:
@@ -476,12 +556,14 @@ def get_favorite_movies(
     return favorite_movies
 
 
-@router.post("/movies/{movie_id}/rating/", summary="Rate a movie", tags=["Movies", "Rating"])
+@router.post(
+    "/movies/{movie_id}/rating/", summary="Rate a movie", tags=["Movies", "Rating"]
+)
 def rate_movie(
     movie_id: int,
     rating: float,
     db: Session = Depends(get_db),
-    current_user: UserModel = Depends(get_current_user)
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
     Rate a movie on a 10-point scale.
@@ -493,16 +575,21 @@ def rate_movie(
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-
-    existing_rating = db.query(MovieRatingModel).filter(
-        MovieRatingModel.movie_id == movie_id,
-        MovieRatingModel.user_id == current_user.id
-    ).first()
+    existing_rating = (
+        db.query(MovieRatingModel)
+        .filter(
+            MovieRatingModel.movie_id == movie_id,
+            MovieRatingModel.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if existing_rating:
         existing_rating.rating = rating
     else:
-        new_rating = MovieRatingModel(movie_id=movie_id, user_id=current_user.id, rating=rating)
+        new_rating = MovieRatingModel(
+            movie_id=movie_id, user_id=current_user.id, rating=rating
+        )
         db.add(new_rating)
 
     db.commit()
@@ -510,7 +597,11 @@ def rate_movie(
     return {"message": "Rating added/updated successfully."}
 
 
-@router.get("/movies/{movie_id}/rating/", summary="Get the average rating of a movie", tags=["Movies", "Rating"])
+@router.get(
+    "/movies/{movie_id}/rating/",
+    summary="Get the average rating of a movie",
+    tags=["Movies", "Rating"],
+)
 def get_movie_rating(movie_id: int, db: Session = Depends(get_db)):
     """
     Get the average rating of a movie.

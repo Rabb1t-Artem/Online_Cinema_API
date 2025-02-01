@@ -29,9 +29,13 @@ class EmailSender(EmailSenderInterface):
         self._password = password
         self._use_tls = use_tls
         self._activation_email_template_name = activation_email_template_name
-        self._activation_complete_email_template_name = activation_complete_email_template_name
+        self._activation_complete_email_template_name = (
+            activation_complete_email_template_name
+        )
         self._password_email_template_name = password_email_template_name
-        self._password_complete_email_template_name = password_complete_email_template_name
+        self._password_complete_email_template_name = (
+            password_complete_email_template_name
+        )
 
         self._env = Environment(loader=FileSystemLoader(template_dir))
 
