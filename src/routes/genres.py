@@ -21,13 +21,9 @@ router = APIRouter()
     responses={
         404: {
             "description": "No genres found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "No genres found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "No genres found."}}},
         }
-    }
+    },
 )
 def get_genre_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -74,29 +70,19 @@ def get_genre_list(
         },
         400: {
             "description": "Invalid input.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Invalid input data."}
-                }
-            },
-        }
+            "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
+        },
     },
-    status_code=201
+    status_code=201,
 )
-def create_genre(
-    genre_data: GenreCreateSchema,
-    db: Session = Depends(get_db)
-) -> GenreDetailSchema:
+def create_genre(genre_data: GenreCreateSchema, db: Session = Depends(get_db)) -> GenreDetailSchema:
     """
     Add a new genre to the database.
     """
     existing_genre = db.query(GenreModel).filter(GenreModel.name == genre_data.name).first()
 
     if existing_genre:
-        raise HTTPException(
-            status_code=409,
-            detail=f"A genre with the name '{genre_data.name}' already exists."
-        )
+        raise HTTPException(status_code=409, detail=f"A genre with the name '{genre_data.name}' already exists.")
 
     genre = GenreModel(name=genre_data.name)
     db.add(genre)
@@ -117,13 +103,9 @@ def create_genre(
     responses={
         404: {
             "description": "Genre not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Genre with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Genre with the given ID was not found."}}},
         }
-    }
+    },
 )
 def get_genre_by_id(
     genre_id: int,
@@ -135,10 +117,7 @@ def get_genre_by_id(
     genre = db.query(GenreModel).filter(GenreModel.id == genre_id).first()
 
     if not genre:
-        raise HTTPException(
-            status_code=404,
-            detail="Genre with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Genre with the given ID was not found.")
 
     return GenreDetailSchema.model_validate(genre)
 
@@ -152,19 +131,13 @@ def get_genre_by_id(
         "a 404 error will be returned.</p>"
     ),
     responses={
-        204: {
-            "description": "Genre deleted successfully."
-        },
+        204: {"description": "Genre deleted successfully."},
         404: {
             "description": "Genre not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Genre with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Genre with the given ID was not found."}}},
         },
     },
-    status_code=204
+    status_code=204,
 )
 def delete_genre(
     genre_id: int,
@@ -176,10 +149,7 @@ def delete_genre(
     genre = db.query(GenreModel).filter(GenreModel.id == genre_id).first()
 
     if not genre:
-        raise HTTPException(
-            status_code=404,
-            detail="Genre with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Genre with the given ID was not found.")
 
     db.delete(genre)
     db.commit()
@@ -197,21 +167,13 @@ def delete_genre(
     responses={
         200: {
             "description": "Genre updated successfully.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Genre updated successfully."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Genre updated successfully."}}},
         },
         404: {
             "description": "Genre not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Genre with the given ID was not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Genre with the given ID was not found."}}},
         },
-    }
+    },
 )
 def update_genre(
     genre_id: int,
@@ -224,10 +186,7 @@ def update_genre(
     genre = db.query(GenreModel).filter(GenreModel.id == genre_id).first()
 
     if not genre:
-        raise HTTPException(
-            status_code=404,
-            detail="Genre with the given ID was not found."
-        )
+        raise HTTPException(status_code=404, detail="Genre with the given ID was not found.")
 
     for key, value in genre_data.dict(exclude_unset=True).items():
         setattr(genre, key, value)

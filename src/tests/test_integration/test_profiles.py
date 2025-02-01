@@ -11,7 +11,7 @@ from exceptions import S3FileUploadError
 
 @pytest.mark.unit
 def test_create_user_profile_with_fake_s3(
-        db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
+    db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
 ):
     """
     Positive test for creating a user profile.
@@ -80,8 +80,10 @@ def test_create_user_profile_with_fake_s3(
     [
         (None, 401, "Authorization header is missing"),
         (
-        {"Authorization": "Token invalid_token"}, 401,
-        "Invalid Authorization header format. Expected 'Bearer <token>'")
+            {"Authorization": "Token invalid_token"},
+            401,
+            "Invalid Authorization header format. Expected 'Bearer <token>'",
+        ),
     ],
 )
 def test_create_user_profile_invalid_auth(client, headers, expected_status, expected_detail):
@@ -102,8 +104,7 @@ def test_create_user_profile_invalid_auth(client, headers, expected_status, expe
     response = client.post(profile_url, headers=headers)
 
     assert response.status_code == expected_status, f"Expected {expected_status}, got {response.status_code}"
-    assert response.json()["detail"] == expected_detail, \
-        f"Unexpected error message: {response.json()['detail']}"
+    assert response.json()["detail"] == expected_detail, f"Unexpected error message: {response.json()['detail']}"
 
 
 @pytest.mark.unit
@@ -141,14 +142,11 @@ def test_create_user_profile_expired_token(client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 401, f"Expected 401, got {response.status_code}"
-    assert response.json()["detail"] == "Token has expired.", \
-        f"Unexpected error message: {response.json()['detail']}"
+    assert response.json()["detail"] == "Token has expired.", f"Unexpected error message: {response.json()['detail']}"
 
 
 @pytest.mark.unit
-def test_admin_creates_user_profile(
-        db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
-):
+def test_admin_creates_user_profile(db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client):
     """
     Test that an admin can create a profile for another user.
 
@@ -216,7 +214,7 @@ def test_admin_creates_user_profile(
 
 @pytest.mark.unit
 def test_user_cannot_create_another_user_profile(
-        db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
+    db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
 ):
     """
     Test that a regular user cannot create a profile for another user.
@@ -259,8 +257,9 @@ def test_user_cannot_create_another_user_profile(
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 403, f"Expected 403, got {response.status_code}"
-    assert response.json()["detail"] == "You don't have permission to edit this profile.", \
-        f"Unexpected error message: {response.json()['detail']}"
+    assert (
+        response.json()["detail"] == "You don't have permission to edit this profile."
+    ), f"Unexpected error message: {response.json()['detail']}"
 
     profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user_2.id).first()
     assert profile_in_db is None, "Profile should not have been created!"
@@ -268,7 +267,7 @@ def test_user_cannot_create_another_user_profile(
 
 @pytest.mark.unit
 def test_inactive_user_cannot_create_profile(
-        db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
+    db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
 ):
     """
     Test that an inactive user cannot create a profile.
@@ -306,17 +305,16 @@ def test_inactive_user_cannot_create_profile(
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 401, f"Expected 401, got {response.status_code}"
-    assert response.json()["detail"] == "User not found or not active.", \
-        f"Unexpected error message: {response.json()['detail']}"
+    assert (
+        response.json()["detail"] == "User not found or not active."
+    ), f"Unexpected error message: {response.json()['detail']}"
 
     profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
     assert profile_in_db is None, "Profile should not have been created!"
 
 
 @pytest.mark.unit
-def test_cannot_create_profile_twice(
-        db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
-):
+def test_cannot_create_profile_twice(db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client):
     """
     Test that a user cannot create a profile twice.
 
@@ -356,8 +354,9 @@ def test_cannot_create_profile_twice(
     response2 = client.post(profile_url, headers=headers, files=files)
 
     assert response2.status_code == 400, f"Expected 400, got {response2.status_code}"
-    assert response2.json()["detail"] == "User already has a profile.", \
-        f"Unexpected error message: {response2.json()['detail']}"
+    assert (
+        response2.json()["detail"] == "User already has a profile."
+    ), f"Unexpected error message: {response2.json()['detail']}"
 
     profiles_count = db_session.query(UserProfileModel).filter_by(user_id=user.id).count()
     assert profiles_count == 1, f"Expected only one profile, but found {profiles_count}"
@@ -365,7 +364,7 @@ def test_cannot_create_profile_twice(
 
 @pytest.mark.unit
 def test_profile_creation_fails_on_s3_upload_error(
-        db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
+    db_session, seed_user_groups, reset_db, jwt_manager, s3_storage_fake, client
 ):
     """
     Test that profile creation fails if S3 upload fails.
@@ -404,18 +403,22 @@ def test_profile_creation_fails_on_s3_upload_error(
         response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 500, f"Expected 500, got {response.status_code}"
-    assert response.json()["detail"] == "Failed to upload avatar. Please try again later.", \
-        f"Unexpected error message: {response.json()['detail']}"
+    assert (
+        response.json()["detail"] == "Failed to upload avatar. Please try again later."
+    ), f"Unexpected error message: {response.json()['detail']}"
 
     profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
     assert profile_in_db is None, "Profile should not be created when S3 upload fails!"
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("first_name, last_name, expected_error", [
-    ("John1", "Doe", "John1 contains non-english letters"),
-    ("John", "Doe1", "Doe1 contains non-english letters"),
-])
+@pytest.mark.parametrize(
+    "first_name, last_name, expected_error",
+    [
+        ("John1", "Doe", "John1 contains non-english letters"),
+        ("John", "Doe1", "Doe1 contains non-english letters"),
+    ],
+)
 def test_profile_creation_invalid_name(client, jwt_manager, first_name, last_name, expected_error):
     """
     Test that profile creation fails if the first_name or last_name contains non-English letters.
@@ -437,8 +440,7 @@ def test_profile_creation_invalid_name(client, jwt_manager, first_name, last_nam
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert expected_error in str(response.json()), \
-        f"Unexpected error message: {response.json()}"
+    assert expected_error in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -463,8 +465,7 @@ def test_profile_creation_invalid_avatar_format(client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Invalid image format" in str(response.json()), \
-        f"Unexpected error message: {response.json()}"
+    assert "Invalid image format" in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -494,8 +495,7 @@ def test_profile_creation_avatar_too_large(db_session, client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Image size exceeds 1 MB" in str(response.json()), \
-        f"Unexpected error message: {response.json()}"
+    assert "Image size exceeds 1 MB" in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -520,15 +520,17 @@ def test_profile_creation_invalid_gender(client, jwt_manager):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Gender must be one of" in str(response.json()), \
-        f"Unexpected error message: {response.json()}"
+    assert "Gender must be one of" in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("birth_date, expected_error", [
-    ("1800-01-01", "Invalid birth date - year must be greater than 1900."),
-    ("2010-01-01", "You must be at least 18 years old to register."),
-])
+@pytest.mark.parametrize(
+    "birth_date, expected_error",
+    [
+        ("1800-01-01", "Invalid birth date - year must be greater than 1900."),
+        ("2010-01-01", "You must be at least 18 years old to register."),
+    ],
+)
 def test_profile_creation_invalid_birth_date(client, jwt_manager, birth_date, expected_error):
     """
     Test that profile creation fails if birth_date is invalid.
@@ -550,8 +552,7 @@ def test_profile_creation_invalid_birth_date(client, jwt_manager, birth_date, ex
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert expected_error in str(response.json()), \
-        f"Unexpected error message: {response.json()}"
+    assert expected_error in str(response.json()), f"Unexpected error message: {response.json()}"
 
 
 @pytest.mark.unit
@@ -577,5 +578,6 @@ def test_profile_creation_empty_info(client, jwt_manager, info_value):
     response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 422, f"Expected 422, got {response.status_code}"
-    assert "Info field cannot be empty or contain only spaces." in str(response.json()), \
-        f"Unexpected error message: {response.json()}"
+    assert "Info field cannot be empty or contain only spaces." in str(
+        response.json()
+    ), f"Unexpected error message: {response.json()}"

@@ -1,4 +1,3 @@
-
 import datetime
 from enum import Enum
 from typing import Optional, List
@@ -14,23 +13,15 @@ from database.models.orders import OrderItemModel
 MoviesGenresModel = Table(
     "movies_genres",
     Base.metadata,
-    Column(
-        "movie_id",
-        ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True, nullable=False),
-    Column(
-        "genre_id",
-        ForeignKey("genres.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+    Column("movie_id", ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+    Column("genre_id", ForeignKey("genres.id", ondelete="CASCADE"), primary_key=True, nullable=False),
 )
 
 StarsMoviesModel = Table(
     "stars_movies",
     Base.metadata,
-    Column(
-        "movie_id",
-        ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True, nullable=False),
-    Column(
-        "star_id",
-        ForeignKey("stars.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+    Column("movie_id", ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+    Column("star_id", ForeignKey("stars.id", ondelete="CASCADE"), primary_key=True, nullable=False),
 )
 
 MoviesDirectorsModel = Table(
@@ -56,9 +47,7 @@ class GenreModel(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel",
-        secondary=MoviesGenresModel,
-        back_populates="genres"
+        "MovieModel", secondary=MoviesGenresModel, back_populates="genres"
     )
 
     def __repr__(self):
@@ -71,11 +60,7 @@ class StarModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel",
-        secondary=StarsMoviesModel,
-        back_populates="stars"
-    )
+    movies: Mapped[list["MovieModel"]] = relationship("MovieModel", secondary=StarsMoviesModel, back_populates="stars")
 
     def __repr__(self):
         return f"<Star(name='{self.name}')>"
@@ -104,9 +89,7 @@ class CertificationModel(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel",
-        secondary=MoviesCertificationsModel,
-        back_populates="certifications"
+        "MovieModel", secondary=MoviesCertificationsModel, back_populates="certifications"
     )
 
     def __repr__(self):
@@ -117,12 +100,7 @@ class MovieModel(Base):
     __tablename__ = "movies"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    uuid: Mapped[str] = mapped_column(
-        String(36),
-        unique=True,
-        nullable=False,
-        default=lambda: str(uuid.uuid4())
-    )
+    uuid: Mapped[str] = mapped_column(String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     time: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -146,26 +124,16 @@ class MovieModel(Base):
     order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
     genres: Mapped[list["GenreModel"]] = relationship(
-        "GenreModel",
-        secondary=MoviesGenresModel,
-        back_populates="movies"
+        "GenreModel", secondary=MoviesGenresModel, back_populates="movies"
     )
 
-    stars: Mapped[list["StarModel"]] = relationship(
-        "StarModel",
-        secondary=StarsMoviesModel,
-        back_populates="movies"
-    )
+    stars: Mapped[list["StarModel"]] = relationship("StarModel", secondary=StarsMoviesModel, back_populates="movies")
 
     directors: Mapped[list["DirectorModel"]] = relationship(
-        "DirectorModel",
-        secondary=MoviesDirectorsModel,
-        back_populates="movies"
+        "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
 
-    __table_args__ = (
-        UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),
-    )
+    __table_args__ = (UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),)
 
     @classmethod
     def default_order_by(cls):

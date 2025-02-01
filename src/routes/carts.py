@@ -54,9 +54,7 @@ async def add_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_
         if not movie:
             raise HTTPException(status_code=404, detail="Movie not found")
 
-        existing_item = await db.execute(
-            select(CartItemModel).filter_by(cart_id=cart.id, movie_id=movie_id)
-        )
+        existing_item = await db.execute(select(CartItemModel).filter_by(cart_id=cart.id, movie_id=movie_id))
         if existing_item.scalars().first():
             raise HTTPException(status_code=400, detail="Movie is already in the cart")
 
@@ -90,9 +88,7 @@ async def remove_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(g
     try:
         cart = await get_cart_by_user(user_id, db)
 
-        cart_item = await db.execute(
-            select(CartItemModel).filter_by(cart_id=cart.id, movie_id=movie_id)
-        )
+        cart_item = await db.execute(select(CartItemModel).filter_by(cart_id=cart.id, movie_id=movie_id))
         cart_item = cart_item.scalars().first()
 
         if not cart_item:
