@@ -2,7 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from database import get_db
-from schemas.orders import OrderResponseSchema, OrderItemResponseSchema, OrderWithMoviesResponseSchema, OrderListResponseSchema
+from schemas.orders import (
+    OrderResponseSchema,
+    OrderItemResponseSchema,
+    OrderWithMoviesResponseSchema,
+    OrderListResponseSchema,
+)
 from database.models.orders import OrderModel, OrderItemModel
 from database.models.movies import MovieModel
 from database.models.carts import CartModel, CartItemModel
@@ -39,12 +44,12 @@ async def get_orders(
 
     if user.group != "admin":
         raise HTTPException(status_code=403, detail="Access forbidden for non-admin users")
-    
+
     query = select(OrderModel)
-    
+
     if status:
         query = query.filter(OrderModel.status == status)
-    
+
     if user_id:
         query = query.filter(OrderModel.user_id == user_id)
 
@@ -54,7 +59,7 @@ async def get_orders(
             query = query.filter(OrderModel.created_at == order_date_obj)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
-    
+
     query = query.order_by(OrderModel.created_at.desc())
 
     total_items_result = await db.execute(select(func.count()).select_from(query))
@@ -109,9 +114,7 @@ async def create_order(
     async with db.begin():
         # Check for any cancelled orders
         existing_orders = await db.execute(
-            select(OrderModel).filter(
-                OrderModel.user_id == user_id, OrderModel.status == "pending"
-            )
+            select(OrderModel).filter(OrderModel.user_id == user_id, OrderModel.status == "pending")
         )
         existing_orders = existing_orders.scalars().all()
 
@@ -120,13 +123,10 @@ async def create_order(
 
         # Get movies in the user's cart
         user_movies = await db.execute(
-            select(MovieModel)
-            .join(CartItemModel)
-            .join(CartModel)
-            .filter(CartModel.user_id == user_id)
+            select(MovieModel).join(CartItemModel).join(CartModel).filter(CartModel.user_id == user_id)
         )
         movies_in_cart = user_movies.scalars().all()
-        
+
         user_cart = await db.get(CartModel, user_id=user_id)
 
         if not movies_in_cart:
@@ -143,21 +143,16 @@ async def create_order(
 
             # Add order items
             for movie in movies_in_cart:
-                order_item = OrderItemModel(
-                    order_id=order.id, movie_id=movie.id, price_at_order=movie.price
-                )
+                order_item = OrderItemModel(order_id=order.id, movie_id=movie.id, price_at_order=movie.price)
                 db.add(order_item)
-                
+
             await db.commit()
             await db.delete(user_cart)
-            
+
             return order
         except SQLAlchemyError:
             await db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Internal server error"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 
 @router.get("/orders/{order_id}", response_model=OrderResponseSchema)
@@ -168,12 +163,10 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
     """
     # Get the order
     result = await db.execute(
-            select(OrderModel)
-            .options(
-                joinedload(OrderModel.items).joinedload(OrderItemModel.movie)
-            )
-            .filter(OrderModel.id == order_id)
-        )
+        select(OrderModel)
+        .options(joinedload(OrderModel.items).joinedload(OrderItemModel.movie))
+        .filter(OrderModel.id == order_id)
+    )
     order = result.scalar_one_or_none()
 
     if order is None:
@@ -183,13 +176,13 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Order is cancelled and cannot be accessed")
 
     return OrderWithMoviesResponseSchema(
-            id=order.id,
-            user_id=order.user_id,
-            created_at=order.created_at.isoformat(),
-            status=order.status,
-            total_amount=order.total_amount,
-            movies=[item.movie.name for item in order.items]
-        )
+        id=order.id,
+        user_id=order.user_id,
+        created_at=order.created_at.isoformat(),
+        status=order.status,
+        total_amount=order.total_amount,
+        movies=[item.movie.name for item in order.items],
+    )
 
 
 @router.put("/orders/{order_id}", response_model=OrderResponseSchema)
