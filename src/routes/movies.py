@@ -17,6 +17,7 @@ from database.models.movies import (
     FavoriteMovieModel,
     MovieRatingModel,
 )
+from database.models.orders import OrderItemModel
 from schemas import (
     MovieListResponseSchema,
     MovieListItemSchema,
@@ -271,18 +272,24 @@ def get_movie_by_id(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Movies", "Delete"],
 )
+@router.delete("/movies/{movie_id}/", summary="Delete a movie by ID")
 def delete_movie(
-    movie_id: int,
-    db: Session = Depends(get_db),
+        movie_id: int,
+        db: Session = Depends(get_db),
 ):
     """
     Delete a specific movie by its ID.
+    Prevent deletion if at least one order item (purchase) exists for the movie.
     """
     movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
-
     if not movie:
+        raise HTTPException(status_code=404, detail="Movie with the given ID was not found.")
+
+    order_items_count = db.query(OrderItemModel).filter(OrderItemModel.movie_id == movie_id).count()
+    if order_items_count > 0:
         raise HTTPException(
-            status_code=404, detail="Movie with the given ID was not found."
+            status_code=400,
+            detail="Cannot delete movie, it has been purchased by at least one user."
         )
 
     db.delete(movie)
