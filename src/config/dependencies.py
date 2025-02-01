@@ -62,35 +62,24 @@ def get_s3_storage_client(
 
 
 def get_current_user(
-    db: Session = Depends(get_db),
-    token: str = Depends(oauth2_scheme),
-    settings: Settings = Depends()
+    db: Session = Depends(get_db), token: str = Depends(oauth2_scheme), settings: Settings = Depends()
 ) -> UserModel | None:
     try:
         payload = JWTAuthManager(
             secret_key_access=settings.SECRET_KEY_ACCESS,
             secret_key_refresh=settings.SECRET_KEY_REFRESH,
-            algorithm=settings.JWT_SIGNING_ALGORITHM
+            algorithm=settings.JWT_SIGNING_ALGORITHM,
         ).decode_access_token(token)
 
         user_id = payload.get("user_id")
         if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
         user = db.query(UserModel).filter(UserModel.id == user_id).first()
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         return user
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Could not validate token: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Could not validate token: {str(e)}")

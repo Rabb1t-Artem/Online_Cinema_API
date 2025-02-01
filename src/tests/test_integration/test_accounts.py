@@ -125,7 +125,7 @@ def test_activate_account_success(client, db_session, seed_user_groups):
     - Activate the user using the activation token.
     - Verify the user is activated and the token is deleted.
     """
-    
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
@@ -163,12 +163,12 @@ def test_activate_user_with_expired_token(client, db_session, seed_user_groups):
 
     Ensures that the endpoint returns a 400 error when the activation token is expired.
     """
-    
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
-    
+
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
 
