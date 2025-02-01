@@ -91,6 +91,7 @@ async def create_star(star_data: StarCreateSchema, db: AsyncSession = Depends(ge
     """
     Add a new star to the database asynchronously.
     """
+    
     result = await db.execute(select(StarModel).filter(StarModel.name == star_data.name))
     existing_star = result.scalars().first()
 

@@ -96,6 +96,7 @@ async def get_genre_list(
     status_code=status.HTTP_201_CREATED,
     tags=["Genres", "Create"],
 )
+
 async def create_genre(genre_data: GenreCreateSchema, db: AsyncSession = Depends(get_db)) -> GenreDetailSchema:
     """
     Add a new genre to the database.
@@ -225,6 +226,7 @@ async def update_genre(
 
     if not genre:
         raise HTTPException(status_code=404, detail="Genre with the given ID was not found.")
+
     for key, value in genre_data.dict(exclude_unset=True).items():
         setattr(genre, key, value)
 

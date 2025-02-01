@@ -87,6 +87,7 @@ async def get_movie_list(
         movies=movie_list,
         prev_page=f"/theater/movies/?page={page - 1}&per_page={per_page}" if page > 1 else None,
         next_page=f"/theater/movies/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -116,18 +117,22 @@ async def get_movie_list(
     status_code=status.HTTP_201_CREATED,
     tags=["Movies", "Create"],
 )
+
 async def create_movie(
     movie_data: MovieCreateSchema,
     db: AsyncSession = Depends(get_db),
 ) -> MovieDetailSchema:
+
     """
     Asynchronously add a new movie to the database.
     Checks for duplicates and automatically links or creates associated entities
     such as director, certification, genres, and stars.
     """
+    
     result = await db.execute(
         select(MovieModel).filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year)
     )
+    
     existing_movie = result.scalars().first()
     if existing_movie:
         raise HTTPException(
@@ -136,17 +141,21 @@ async def create_movie(
         )
 
     try:
+
         result = await db.execute(select(DirectorModel).filter(DirectorModel.name == movie_data.director.name))
         director = result.scalars().first()
+
         if not director:
             director = DirectorModel(name=movie_data.director.name)
             db.add(director)
             await db.flush()
 
+
         result = await db.execute(
             select(CertificationModel).filter(CertificationModel.name == movie_data.certification.name)
         )
         certification = result.scalars().first()
+
         if not certification:
             certification = CertificationModel(name=movie_data.certification.name)
             db.add(certification)
@@ -517,6 +526,7 @@ async def get_favorite_movies(
     """
     Asynchronously get the list of favorite movies with optional search, filter, and sort options.
     """
+
     query = select(MovieModel).join(FavoriteMovieModel).filter(FavoriteMovieModel.user_id == current_user.id)
 
     if search:
@@ -634,7 +644,11 @@ async def reply_to_comment(
     await db.refresh(reply)
 
     if parent_comment.user_id != current_user.id:
-        await create_notification(db, user_id=parent_comment.user_id, message="Your comment has received a reply.")
+        await create_notification(
+            db,
+            user_id=parent_comment.user_id,
+            message="Your comment has received a reply.",
+        )
 
     return {"message": "Reply added successfully."}
 
@@ -659,7 +673,8 @@ async def like_comment(
 
     result = await db.execute(
         select(CommentLikeModel).filter(
-            CommentLikeModel.comment_id == comment_id, CommentLikeModel.user_id == current_user.id
+            CommentLikeModel.comment_id == comment_id,
+            CommentLikeModel.user_id == current_user.id,
         )
     )
     existing_like = result.scalars().first()
