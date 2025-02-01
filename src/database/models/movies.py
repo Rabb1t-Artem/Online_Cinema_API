@@ -7,7 +7,7 @@ from sqlalchemy import String, Float, Text, DECIMAL, UniqueConstraint, ForeignKe
     DateTime
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
-from database import Base
+from database import Base, UserModel
 from database.models.orders import OrderItemModel
 
 
@@ -185,7 +185,7 @@ class MovieLikeModel(Base):
     is_liked = Column(Boolean, nullable=False, default=False)
 
     movie = relationship("MovieModel", back_populates="likes")
-    user = relationship("UserModel", back_populates="movie_likes")
+    user = relationship("UserModel", back_populates="likes")
 
 
     __table_args__ = (UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),)
@@ -201,4 +201,18 @@ class MovieCommentModel(Base):
     created_at = Column(DateTime, default=datetime.UTC)
 
     movie = relationship("MovieModel", back_populates="comments")
-    user = relationship("UserModel")
+    user = relationship("UserModel", back_populates="comments")
+
+
+class FavoriteMovieModel(Base):
+    __tablename__ = "favorite_movies"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
+
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="favorites")
+    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="favorites")
+
+    def __repr__(self):
+        return f"<FavoriteMovie(user_id={self.user_id}, movie_id={self.movie_id})>"

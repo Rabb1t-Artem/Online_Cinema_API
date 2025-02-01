@@ -141,3 +141,27 @@ class MovieCommentSchema(MovieCommentCreateSchema):
     model_config = {
         "from_attributes": True,
     }
+
+
+class FavoriteMovieSchema(BaseModel):
+    user_id: int
+    movie_id: int
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class FavoriteMovieResponseSchema(BaseModel):
+    message: str
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+class FavoriteMovieListSchema(BaseModel):
+    movies: List[MovieDetailSchema]
+
+    model_config = {
+        "from_attributes": True,
+    }

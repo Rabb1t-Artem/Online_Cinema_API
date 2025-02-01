@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
@@ -11,7 +11,7 @@ from database.models.movies import (
     GenreModel,
     DirectorModel,
     CertificationModel,
-    StarModel, MovieLikeModel, MovieCommentModel,
+    StarModel, MovieLikeModel, MovieCommentModel, FavoriteMovieModel,
 )
 from schemas import (
     MovieListResponseSchema,
@@ -20,8 +20,7 @@ from schemas import (
     MovieCreateSchema,
     MovieUpdateSchema
 )
-from schemas.movies import MovieLikeSchema, MovieCommentCreateSchema, MovieCommentSchema
-
+from schemas.movies import MovieLikeSchema, MovieCommentCreateSchema, MovieCommentSchema, FavoriteMovieListSchema, FavoriteMovieResponseSchema
 
 router = APIRouter()
 
@@ -423,3 +422,97 @@ def get_comments(movie_id: int, db: Session = Depends(get_db)):
 
     comments = db.query(MovieCommentModel).filter(MovieCommentModel.movie_id == movie_id).all()
     return comments
+
+
+@router.post(
+    "/movies/{movie_id}/favorites/",
+    summary="Add a movie to favorites",
+    tags=["Movies", "Favorites"],
+    response_model=FavoriteMovieResponseSchema
+)
+def add_to_favorites(
+    movie_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Add a movie to the favorites list of the current user.
+    """
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    favorite = db.query(FavoriteMovieModel).filter(
+        FavoriteMovieModel.movie_id == movie_id,
+        FavoriteMovieModel.user_id == current_user.id
+    ).first()
+
+    if favorite:
+        raise HTTPException(status_code=400, detail="Movie is already in favorites.")
+
+    new_favorite = FavoriteMovieModel(user_id=current_user.id, movie_id=movie_id)
+    db.add(new_favorite)
+    db.commit()
+
+    return {"message": "Movie added to favorites."}
+
+
+@router.delete(
+    "/movies/{movie_id}/favorites/",
+    summary="Remove a movie from favorites",
+    tags=["Movies", "Favorites"],
+    response_model=FavoriteMovieResponseSchema
+)
+def remove_from_favorites(
+    movie_id: int,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Remove a movie from the favorites list of the current user.
+    """
+    favorite = db.query(FavoriteMovieModel).filter(
+        FavoriteMovieModel.movie_id == movie_id,
+        FavoriteMovieModel.user_id == current_user.id
+    ).first()
+
+    if not favorite:
+        raise HTTPException(status_code=404, detail="Movie not in favorites.")
+
+    db.delete(favorite)
+    db.commit()
+
+    return {"message": "Movie removed from favorites."}
+
+
+@router.get(
+    "/movies/favorites/",
+    summary="Get all favorite movies",
+    tags=["Movies", "Favorites"],
+    response_model=FavoriteMovieListSchema,
+)
+def get_favorite_movies(
+    search: Optional[str] = None,
+    sort_by: Optional[str] = "name",
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Get the list of favorite movies with optional search, filter, and sort options.
+    """
+    query = db.query(MovieModel).join(FavoriteMovieModel).filter(
+        FavoriteMovieModel.user_id == current_user.id
+    )
+
+    if search:
+        query = query.filter(MovieModel.name.ilike(f"%{search}%"))
+
+    if sort_by:
+        if sort_by == "name":
+            query = query.order_by(MovieModel.name)
+        elif sort_by == "release_date":
+            query = query.order_by(MovieModel.release_date)
+
+    favorite_movies = query.all()
+
+    return favorite_movies
