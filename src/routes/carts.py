@@ -6,7 +6,7 @@ from sqlalchemy import delete
 from datetime import datetime, timezone
 
 from database.models.orders import OrderItemModel, OrderModel
-from database.session import get_db
+from database import get_db
 from database.models.carts import CartModel, CartItemModel
 from database.models.movies import MovieModel
 from schemas.carts import CartResponseSchema, CartItemResponseSchema
@@ -41,9 +41,7 @@ async def view_cart(user_id: int, db: AsyncSession = Depends(get_db)) -> CartRes
     if not cart.cart_items:
         raise HTTPException(status_code=404, detail="Cart is empty")
 
-    existing_item = await db.execute(select(CartItemModel).filter_by(cart_id=cart.id, movie_id=movie_id))
-    if existing_item.scalars().first():
-        raise HTTPException(status_code=400, detail="Movie is already in the cart")
+    return CartResponseSchema.model_validate(cart)
 
 
 @cart_router.post("/{movie_id}/add", response_model=CartItemResponseSchema)
