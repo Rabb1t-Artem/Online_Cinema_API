@@ -11,7 +11,7 @@ from database.models.movies import (
     GenreModel,
     DirectorModel,
     CertificationModel,
-    StarModel, MovieLikeModel, MovieCommentModel, FavoriteMovieModel,
+    StarModel, MovieLikeModel, MovieCommentModel, FavoriteMovieModel, MovieRatingModel,
 )
 from schemas import (
     MovieListResponseSchema,
@@ -516,3 +516,53 @@ def get_favorite_movies(
     favorite_movies = query.all()
 
     return favorite_movies
+
+
+@router.post("/movies/{movie_id}/rating/", summary="Rate a movie", tags=["Movies", "Rating"])
+def rate_movie(
+    movie_id: int,
+    rating: float,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Rate a movie on a 10-point scale.
+    """
+    if rating < 1 or rating > 10:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 10.")
+
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+
+    existing_rating = db.query(MovieRatingModel).filter(
+        MovieRatingModel.movie_id == movie_id,
+        MovieRatingModel.user_id == current_user.id
+    ).first()
+
+    if existing_rating:
+        existing_rating.rating = rating
+    else:
+        new_rating = MovieRatingModel(movie_id=movie_id, user_id=current_user.id, rating=rating)
+        db.add(new_rating)
+
+    db.commit()
+
+    return {"message": "Rating added/updated successfully."}
+
+
+@router.get("/movies/{movie_id}/rating/", summary="Get the average rating of a movie", tags=["Movies", "Rating"])
+def get_movie_rating(movie_id: int, db: Session = Depends(get_db)):
+    """
+    Get the average rating of a movie.
+    """
+    movie = db.query(MovieModel).filter(MovieModel.id == movie_id).first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    average_rating = movie.average_rating
+    if average_rating is None:
+        return {"message": "No ratings yet for this movie."}
+
+    return {"average_rating": average_rating}

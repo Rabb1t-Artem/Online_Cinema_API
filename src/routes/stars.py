@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from starlette import status
 
 from database import get_db
 from database.models.movies import StarModel
@@ -33,7 +34,8 @@ router = APIRouter()
                 }
             },
         }
-    }
+    },
+    tags=["Stars"]
 )
 def get_star_list(
         page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -91,7 +93,8 @@ def get_star_list(
             },
         }
     },
-    status_code=201
+    status_code=status.HTTP_201_CREATED,
+    tags=["Stars", "Create"]
 )
 def create_star(
         star_data: StarCreateSchema,
@@ -140,7 +143,8 @@ def create_star(
                 }
             },
         }
-    }
+    },
+    tags=["Stats", "ID_find"]
 )
 def get_star_by_id(
         star_id: int,
@@ -181,7 +185,8 @@ def get_star_by_id(
             },
         },
     },
-    status_code=204
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Stars", "Delete"]
 )
 def delete_star(
     star_id: int,
@@ -228,7 +233,8 @@ def delete_star(
                 }
             },
         },
-    }
+    },
+    tags=["Stars", "Update"]
 )
 def update_star(
     star_id: int,

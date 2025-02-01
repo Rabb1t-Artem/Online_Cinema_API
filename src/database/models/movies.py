@@ -163,10 +163,17 @@ class MovieModel(Base):
         back_populates="movies"
     )
     likes = relationship("MovieLikeModel", back_populates="movies", cascade="all, delete-orphan")
+    ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
 
     __table_args__ = (
         UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),
     )
+
+    @property
+    def average_rating(self):
+        if not self.ratings:
+            return None
+        return sum(rating.rating for rating in self.ratings) / len(self.ratings)
 
     @classmethod
     def default_order_by(cls):
@@ -216,3 +223,18 @@ class FavoriteMovieModel(Base):
 
     def __repr__(self):
         return f"<FavoriteMovie(user_id={self.user_id}, movie_id={self.movie_id})>"
+
+
+class MovieRatingModel(Base):
+    __tablename__ = "movie_ratings"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    rating: Mapped[float] = mapped_column(Float, nullable=False)
+
+    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="ratings")
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="ratings")
+
+    __table_args__ = (UniqueConstraint("movie_id", "user_id", name="unique_movie_user_rating_constraint"),)
+
