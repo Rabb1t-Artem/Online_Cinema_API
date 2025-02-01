@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from database.session import get_db
+from database import get_db
 from database.models.carts import CartModel, CartItemModel
 from database.models.movies import MovieModel
 from schemas.carts import CartResponseSchema, CartItemResponseSchema
