@@ -1,7 +1,6 @@
 import enum
 from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional
-
 from sqlalchemy import (
     ForeignKey,
     String,
@@ -14,6 +13,7 @@ from sqlalchemy import (
     Date,
     UniqueConstraint,
 )
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database import Base
