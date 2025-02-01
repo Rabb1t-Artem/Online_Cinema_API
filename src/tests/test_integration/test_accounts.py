@@ -125,6 +125,7 @@ def test_activate_account_success(client, db_session, seed_user_groups):
     - Activate the user using the activation token.
     - Verify the user is activated and the token is deleted.
     """
+    
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
@@ -162,10 +163,12 @@ def test_activate_user_with_expired_token(client, db_session, seed_user_groups):
 
     Ensures that the endpoint returns a 400 error when the activation token is expired.
     """
+    
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+    
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
 
@@ -196,10 +199,12 @@ def test_activate_user_with_deleted_token(client, db_session, seed_user_groups):
 
     Ensures that the endpoint returns a 400 error when the activation token is deleted.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
 
@@ -216,6 +221,7 @@ def test_activate_user_with_deleted_token(client, db_session, seed_user_groups):
         "email": registration_payload["email"],
         "token": activation_token.token,
     }
+
     activation_response = client.post("/api/v1/accounts/activate/", json=activation_payload)
 
     assert activation_response.status_code == 400, "Expected status code 400 for deleted token."
@@ -230,10 +236,12 @@ def test_activate_already_active_user(client, db_session, seed_user_groups):
 
     Ensures that the endpoint returns a 400 error if the user is already active.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
 
@@ -250,6 +258,7 @@ def test_activate_already_active_user(client, db_session, seed_user_groups):
         "email": registration_payload["email"],
         "token": activation_token.token,
     }
+
     activation_response = client.post("/api/v1/accounts/activate/", json=activation_payload)
 
     assert activation_response.status_code == 400, "Expected status code 400 for already active user."
@@ -264,10 +273,12 @@ def test_request_password_reset_token_success(client, db_session, seed_user_grou
 
     Ensures that a password reset token is created for an active user.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
 
@@ -320,10 +331,12 @@ def test_request_password_reset_token_for_inactive_user(client, db_session, seed
 
     Ensures that the response is correct and no password reset token is created.
     """
+
     registration_payload = {
         "email": "inactiveuser@example.com",
         "password": "StrongPassword123!",
     }
+
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
 
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
@@ -354,10 +367,12 @@ def test_reset_password_success(client, db_session, seed_user_groups):
     - Use the token to reset the password.
     - Verify the password is updated in the database.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "OldPassword123!",
     }
+
     registration_response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert registration_response.status_code == 201, "Expected status code 201 for successful registration."
 
@@ -370,6 +385,7 @@ def test_reset_password_success(client, db_session, seed_user_groups):
         "email": registration_payload["email"],
         "token": activation_token.token,
     }
+
     activation_response = client.post("/api/v1/accounts/activate/", json=activation_payload)
     assert activation_response.status_code == 200, "Expected status code 200 for successful activation."
 
@@ -403,6 +419,7 @@ def test_reset_password_invalid_email(client, db_session):
 
     Validates that the endpoint returns a 400 status code and appropriate error message.
     """
+
     reset_payload = {
         "email": "nonexistent@example.com",
         "token": "random_token",
@@ -421,10 +438,12 @@ def test_reset_password_invalid_token(client, db_session, seed_user_groups):
 
     Validates that the endpoint returns a 400 status code and appropriate error message.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+
     response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert response.status_code == 201, "User registration failed."
 
@@ -456,10 +475,12 @@ def test_reset_password_expired_token(client, db_session, seed_user_groups):
 
     Validates that the endpoint returns a 400 status code and appropriate error message.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+
     response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert response.status_code == 201, "User registration failed."
 
@@ -496,10 +517,12 @@ def test_reset_password_sqlalchemy_error(client, db_session, seed_user_groups):
 
     Validates that the endpoint returns a 500 status code and appropriate error message.
     """
+
     registration_payload = {
         "email": "testuser@example.com",
         "password": "StrongPassword123!",
     }
+
     response = client.post("/api/v1/accounts/register/", json=registration_payload)
     assert response.status_code == 201, "User registration failed."
 
@@ -544,6 +567,7 @@ def test_login_user_success(client, db_session, jwt_manager, seed_user_groups):
         raw_password=user_payload["password"],
         group_id=user_group.id,
     )
+
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -598,6 +622,7 @@ def test_login_user_invalid_cases(client, db_session, seed_user_groups):
         raw_password=user_payload["password"],
         group_id=user_group.id,
     )
+
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -606,6 +631,7 @@ def test_login_user_invalid_cases(client, db_session, seed_user_groups):
         "email": user_payload["email"],
         "password": "WrongPassword123!",
     }
+
     response = client.post("/api/v1/accounts/login/", json=login_payload_incorrect_password)
 
     assert response.status_code == 401, "Expected status code 401 for incorrect password."
@@ -620,6 +646,7 @@ def test_login_user_inactive_account(client, db_session, seed_user_groups):
 
     Validates that the endpoint returns a 403 status code and an appropriate error message.
     """
+
     user_payload = {
         "email": "inactiveuser@example.com",
         "password": "StrongPassword123!",
@@ -631,6 +658,7 @@ def test_login_user_inactive_account(client, db_session, seed_user_groups):
         raw_password=user_payload["password"],
         group_id=user_group.id,
     )
+
     user.is_active = False
     db_session.add(user)
     db_session.commit()
@@ -639,6 +667,7 @@ def test_login_user_inactive_account(client, db_session, seed_user_groups):
         "email": user_payload["email"],
         "password": user_payload["password"],
     }
+
     response = client.post("/api/v1/accounts/login/", json=login_payload)
 
     assert response.status_code == 403, "Expected status code 403 for inactive user."
@@ -659,6 +688,7 @@ def test_login_user_commit_error(client, db_session, seed_user_groups):
         raw_password=user_payload["password"],
         group_id=user_group.id,
     )
+
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -691,6 +721,7 @@ def test_refresh_access_token_success(client, db_session, jwt_manager, seed_user
         raw_password=user_payload["password"],
         group_id=user_group.id,
     )
+
     user.is_active = True
     db_session.add(user)
     db_session.commit()
@@ -763,6 +794,7 @@ def test_refresh_access_token_user_not_found(client, db_session, jwt_manager, se
         raw_password=user_payload["password"],
         group_id=user_group.id,
     )
+
     user.is_active = True
     db_session.add(user)
     db_session.commit()
