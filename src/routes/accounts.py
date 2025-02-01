@@ -60,22 +60,12 @@ BASE_URL = "http://127.0.0.1/api/v1/accounts"
         409: {
             "description": "Conflict - User with this email already exists.",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "A user with this email test@example.com already exists."
-                    }
-                }
+                "application/json": {"example": {"detail": "A user with this email test@example.com already exists."}}
             },
         },
         500: {
             "description": "Internal Server Error - An error occurred during user creation.",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "An error occurred during user creation."
-                    }
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "An error occurred during user creation."}}},
         },
     },
 )
@@ -92,18 +82,14 @@ def register_user(
     If a user with the same email already exists, an HTTP 409 error is raised.
     In case of any unexpected issues during the creation process, an HTTP 500 error is returned.
     """
-    existing_user = (
-        db.query(UserModel).filter_by(email=user_data.email).first()
-    )
+    existing_user = db.query(UserModel).filter_by(email=user_data.email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"A user with this email {user_data.email} already exists.",
         )
 
-    user_group = (
-        db.query(UserGroupModel).filter_by(name=UserGroupEnum.USER).first()
-    )
+    user_group = db.query(UserGroupModel).filter_by(name=UserGroupEnum.USER).first()
 
     try:
         new_user = UserModel.create(
@@ -126,9 +112,7 @@ def register_user(
             detail="An error occurred during user creation.",
         )
     else:
-        activation_link = (
-            f"{BASE_URL}/activate/?token={activation_token.token}"
-        )
+        activation_link = f"{BASE_URL}/activate/?token={activation_token.token}"
         background_tasks.add_task(
             sender.send_activation_email,
             email=user_data.email,
@@ -153,15 +137,11 @@ def register_user(
                     "examples": {
                         "invalid_token": {
                             "summary": "Invalid Token",
-                            "value": {
-                                "detail": "Invalid or expired activation token."
-                            },
+                            "value": {"detail": "Invalid or expired activation token."},
                         },
                         "already_active": {
                             "summary": "Account Already Active",
-                            "value": {
-                                "detail": "User account is already active."
-                            },
+                            "value": {"detail": "User account is already active."},
                         },
                     }
                 }
@@ -191,9 +171,9 @@ def activate_account(
         .first()
     )
 
-    if not token_record or cast(datetime, token_record.expires_at).replace(
-        tzinfo=timezone.utc
-    ) < datetime.now(timezone.utc):
+    if not token_record or cast(datetime, token_record.expires_at).replace(tzinfo=timezone.utc) < datetime.now(
+        timezone.utc
+    ):
         if token_record:
             db.delete(token_record)
             db.commit()
@@ -219,9 +199,7 @@ def activate_account(
         login_link=f"{BASE_URL}/login/",
     )
 
-    return MessageResponseSchema(
-        message="User account activated successfully."
-    )
+    return MessageResponseSchema(message="User account activated successfully.")
 
 
 @router.post(
@@ -249,9 +227,7 @@ def request_password_reset_token(
     user = db.query(UserModel).filter_by(email=data.email).first()
 
     if not user or not user.is_active:
-        return MessageResponseSchema(
-            message="If you are registered, you will receive an email with instructions."
-        )
+        return MessageResponseSchema(message="If you are registered, you will receive an email with instructions.")
 
     db.query(PasswordResetTokenModel).filter_by(user_id=user.id).delete()
 
@@ -265,9 +241,7 @@ def request_password_reset_token(
         reset_link=f"{BASE_URL}/reset-password/complete?token={reset_token.token}",
     )
 
-    return MessageResponseSchema(
-        message="If you are registered, you will receive an email with instructions."
-    )
+    return MessageResponseSchema(message="If you are registered, you will receive an email with instructions.")
 
 
 @router.post(
@@ -298,11 +272,7 @@ def request_password_reset_token(
         500: {
             "description": "Internal Server Error - An error occurred while resetting the password.",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "An error occurred while resetting the password."
-                    }
-                }
+                "application/json": {"example": {"detail": "An error occurred while resetting the password."}}
             },
         },
     },
@@ -326,19 +296,11 @@ def reset_password(
             detail="Invalid email or token.",
         )
 
-    token_record = (
-        db.query(PasswordResetTokenModel).filter_by(user_id=user.id).first()
-    )
+    token_record = db.query(PasswordResetTokenModel).filter_by(user_id=user.id).first()
 
-    expires_at = cast(datetime, token_record.expires_at).replace(
-        tzinfo=timezone.utc
-    )
+    expires_at = cast(datetime, token_record.expires_at).replace(tzinfo=timezone.utc)
 
-    if (
-        not token_record
-        or token_record.token != data.token
-        or expires_at < datetime.now(timezone.utc)
-    ):
+    if not token_record or token_record.token != data.token or expires_at < datetime.now(timezone.utc):
         if token_record:
             db.delete(token_record)
             db.commit()
@@ -376,28 +338,16 @@ def reset_password(
     responses={
         401: {
             "description": "Unauthorized - Invalid email or password.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Invalid email or password."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Invalid email or password."}}},
         },
         403: {
             "description": "Forbidden - User account is not activated.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "User account is not activated."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "User account is not activated."}}},
         },
         500: {
             "description": "Internal Server Error - An error occurred while processing the request.",
             "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "An error occurred while processing the request."
-                    }
-                }
+                "application/json": {"example": {"detail": "An error occurred while processing the request."}}
             },
         },
     },
@@ -465,25 +415,15 @@ def login_user(
     responses={
         400: {
             "description": "Bad Request - The provided refresh token is invalid or expired.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Token has expired."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Token has expired."}}},
         },
         401: {
             "description": "Unauthorized - Refresh token not found.",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Refresh token not found."}
-                }
-            },
+            "content": {"application/json": {"example": {"detail": "Refresh token not found."}}},
         },
         404: {
             "description": "Not Found - The user associated with the token does not exist.",
-            "content": {
-                "application/json": {"example": {"detail": "User not found."}}
-            },
+            "content": {"application/json": {"example": {"detail": "User not found."}}},
         },
     },
 )
@@ -499,9 +439,7 @@ def refresh_access_token(
     a new access token. If the token is invalid or expired, an error is returned.
     """
     try:
-        decoded_token = jwt_manager.decode_refresh_token(
-            token_data.refresh_token
-        )
+        decoded_token = jwt_manager.decode_refresh_token(token_data.refresh_token)
         user_id = decoded_token.get("user_id")
     except BaseSecurityError as error:
         raise HTTPException(
@@ -509,11 +447,7 @@ def refresh_access_token(
             detail=str(error),
         )
 
-    refresh_token_record = (
-        db.query(RefreshTokenModel)
-        .filter_by(token=token_data.refresh_token)
-        .first()
-    )
+    refresh_token_record = db.query(RefreshTokenModel).filter_by(token=token_data.refresh_token).first()
     if not refresh_token_record:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

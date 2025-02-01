@@ -89,10 +89,9 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
     order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
-    order_items_response = [OrderItemResponseSchema(
-        movie_id=item.movie_id,
-        price_at_order=item.price_at_order
-    ) for item in items]
+    order_items_response = [
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
+    ]
 
     return OrderResponseSchema(
         id=order.id,
@@ -100,7 +99,7 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
         created_at=order.created_at,
         status=order.status,
         total_amount=order.total_amount,
-        items=order_items_response
+        items=order_items_response,
     )
 
 
@@ -135,10 +134,9 @@ async def update_order_status(order_id: int, status: str, db: AsyncSession = Dep
     order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
-    order_items_response = [OrderItemResponseSchema(
-        movie_id=item.movie_id,
-        price_at_order=item.price_at_order
-    ) for item in items]
+    order_items_response = [
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
+    ]
 
     return OrderResponseSchema(
         id=order.id,
@@ -146,7 +144,7 @@ async def update_order_status(order_id: int, status: str, db: AsyncSession = Dep
         created_at=order.created_at,
         status=order.status,
         total_amount=order.total_amount,
-        items=order_items_response
+        items=order_items_response,
     )
 
 
@@ -200,10 +198,9 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
     order_items = await db.execute(select(OrderItemModel).filter(OrderItemModel.order_id == order_id))
     items = order_items.scalars().all()
 
-    order_items_response = [OrderItemResponseSchema(
-        movie_id=item.movie_id,
-        price_at_order=item.price_at_order
-    ) for item in items]
+    order_items_response = [
+        OrderItemResponseSchema(movie_id=item.movie_id, price_at_order=item.price_at_order) for item in items
+    ]
 
     return OrderResponseSchema(
         id=order.id,
@@ -211,5 +208,5 @@ async def cancel_order(order_id: int, db: AsyncSession = Depends(get_db)):
         created_at=order.created_at,
         status=order.status,
         total_amount=order.total_amount,
-        items=order_items_response
+        items=order_items_response,
     )

@@ -62,8 +62,9 @@ def test_create_user_profile(e2e_client, db_session, settings, s3_client):
     assert "avatar" in profile_data, "Avatar URL is missing!"
 
     avatar_key = f"avatars/{user.id}_avatar.jpg"
-    assert profile_data["avatar"] == s3_client.get_file_url(avatar_key), \
-        f"Invalid avatar URL: {profile_data['avatar']}"
+    assert profile_data["avatar"] == s3_client.get_file_url(
+        avatar_key
+    ), f"Invalid avatar URL: {profile_data['avatar']}"
 
     profile_in_db = db_session.query(UserProfileModel).filter_by(user_id=user.id).first()
     assert profile_in_db, f"Profile for user {user.id} should exist!"
