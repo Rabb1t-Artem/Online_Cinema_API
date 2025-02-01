@@ -11,7 +11,9 @@ from fastapi import (
     Request,
 )
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+#from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from notifications import EmailSender
 
 from config import (
@@ -79,10 +81,10 @@ BASE_URL = "http://127.0.0.1/api/v1/accounts"
         },
     },
 )
-def register_user(
+async def register_user(
     background_tasks: BackgroundTasks,
     user_data: UserRegistrationRequestSchema,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     sender: EmailSender = Depends(get_accounts_email_notificator),
 ) -> UserRegistrationResponseSchema:
     """
@@ -93,8 +95,9 @@ def register_user(
     In case of any unexpected issues during the creation process, an HTTP 500 error is returned.
     """
     existing_user = (
-        db.query(UserModel).filter_by(email=user_data.email).first()
+        await db.execute(select(UserModel).where(UserModel.email == user_data.email)).scalar_one_or_none()
     )
+
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -102,8 +105,8 @@ def register_user(
         )
 
     user_group = (
-        db.query(UserGroupModel).filter_by(name=UserGroupEnum.USER).first()
-    )
+        await db.execute(select(UserGroupModel).where(UserGroupModel.name == UserGroupEnum.USER))
+    ).scalar_one_or_none()
 
     try:
         new_user = UserModel.create(
@@ -112,15 +115,17 @@ def register_user(
             group_id=user_group.id,
         )
         db.add(new_user)
-        db.flush()
+        await db.flush()
 
         activation_token = ActivationTokenModel(user_id=new_user.id)
         db.add(activation_token)
 
-        db.commit()
-        db.refresh(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        await db.refresh(activation_token)
 
     except SQLAlchemyError:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during user creation.",
@@ -169,10 +174,10 @@ def register_user(
         },
     },
 )
-def activate_account(
+async def activate_account(
     activation_data: UserActivationRequestSchema,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     sender: EmailSender = Depends(get_accounts_email_notificator),
 ) -> MessageResponseSchema:
     """
@@ -182,21 +187,21 @@ def activate_account(
     and deletes the token. If invalid or expired, raises an appropriate error.
     """
     token_record = (
-        db.query(ActivationTokenModel)
+        await db.execute(select(ActivationTokenModel))
         .join(UserModel)
-        .filter(
+        .where(
             UserModel.email == activation_data.email,
             ActivationTokenModel.token == activation_data.token,
         )
-        .first()
+        .scalar_one_or_none()
     )
 
     if not token_record or cast(datetime, token_record.expires_at).replace(
         tzinfo=timezone.utc
     ) < datetime.now(timezone.utc):
         if token_record:
-            db.delete(token_record)
-            db.commit()
+            await db.delete(token_record)
+            await db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired activation token.",
@@ -210,8 +215,8 @@ def activate_account(
         )
 
     user.is_active = True
-    db.delete(token_record)
-    db.commit()
+    await db.delete(token_record)
+    await db.commit()
 
     background_tasks.add_task(
         sender.send_activation_complete_email,
@@ -237,7 +242,7 @@ def activate_account(
 def request_password_reset_token(
     data: PasswordResetRequestSchema,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     sender: EmailSender = Depends(get_accounts_email_notificator),
 ) -> MessageResponseSchema:
     """
@@ -246,7 +251,7 @@ def request_password_reset_token(
     If the user exists and is active, invalidates any existing password reset tokens and generates a new one.
     Always responds with a success message to avoid leaking user information.
     """
-    user = db.query(UserModel).filter_by(email=data.email).first()
+    user = db.execute(select(UserModel)).filter_by(email=data.email).first()
 
     if not user or not user.is_active:
         return MessageResponseSchema(
@@ -454,6 +459,18 @@ def login_user(
         access_token=jwt_access_token,
         refresh_token=jwt_refresh_token,
     )
+
+@router.post(
+    "/logout/",
+    response_model=MessageResponseSchema,
+    summary="User Logout",
+    description="Log the user out and invalidate the session.",
+    status_code=status.HTTP_200_OK)
+async def logout_user(
+        db: Session = Depends(get_db),
+        jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
+):
+    pass
 
 
 @router.post(
