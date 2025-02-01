@@ -3,7 +3,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy import insert
 
 from config import get_settings, get_accounts_email_notificator, get_s3_storage_client
-from database import reset_database, get_db_contextmanager, UserGroupEnum, UserGroupModel
+from database import (
+    reset_database,
+    get_db_contextmanager,
+    UserGroupEnum,
+    UserGroupModel,
+)
 from database.populate import CSVDatabaseSeeder
 from main import app
 from security.token_manager import JWTAuthManager
@@ -97,7 +102,9 @@ def seed_user_groups(db_session):
 
 @pytest.fixture(scope="function")
 def seed_database(db_session, settings):
-    seeder = CSVDatabaseSeeder(csv_file_path=settings.PATH_TO_MOVIES_CSV, db_session=db_session)
+    seeder = CSVDatabaseSeeder(
+        csv_file_path=settings.PATH_TO_MOVIES_CSV, db_session=db_session
+    )
     if not seeder.is_db_populated():
         seeder.seed()
     yield db_session

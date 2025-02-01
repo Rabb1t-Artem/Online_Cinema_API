@@ -157,6 +157,7 @@ class FavoriteMovieResponseSchema(BaseModel):
         "from_attributes": True,
     }
 
+
 class FavoriteMovieListSchema(BaseModel):
     movies: List[MovieDetailSchema]
 

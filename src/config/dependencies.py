@@ -16,7 +16,9 @@ def get_settings() -> BaseAppSettings:
     return Settings()
 
 
-def get_jwt_auth_manager(settings: BaseAppSettings = Depends(get_settings)) -> JWTAuthManagerInterface:
+def get_jwt_auth_manager(
+    settings: BaseAppSettings = Depends(get_settings),
+) -> JWTAuthManagerInterface:
     return JWTAuthManager(
         secret_key_access=settings.SECRET_KEY_ACCESS,
         secret_key_refresh=settings.SECRET_KEY_REFRESH,
@@ -24,7 +26,9 @@ def get_jwt_auth_manager(settings: BaseAppSettings = Depends(get_settings)) -> J
     )
 
 
-def get_accounts_email_notificator(settings: BaseAppSettings = Depends(get_settings)) -> EmailSenderInterface:
+def get_accounts_email_notificator(
+    settings: BaseAppSettings = Depends(get_settings),
+) -> EmailSenderInterface:
     return EmailSender(
         hostname=settings.EMAIL_HOST,
         port=settings.EMAIL_PORT,
@@ -39,7 +43,9 @@ def get_accounts_email_notificator(settings: BaseAppSettings = Depends(get_setti
     )
 
 
-def get_s3_storage_client(settings: BaseAppSettings = Depends(get_settings)) -> S3StorageInterface:
+def get_s3_storage_client(
+    settings: BaseAppSettings = Depends(get_settings),
+) -> S3StorageInterface:
     return S3StorageClient(
         endpoint_url=settings.S3_STORAGE_ENDPOINT,
         access_key=settings.S3_STORAGE_ACCESS_KEY,
