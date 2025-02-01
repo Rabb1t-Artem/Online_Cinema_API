@@ -41,7 +41,9 @@ async def view_cart(user_id: int, db: AsyncSession = Depends(get_db)) -> CartRes
     if not cart.cart_items:
         raise HTTPException(status_code=404, detail="Cart is empty")
 
-    return CartResponseSchema.model_validate(cart)
+    existing_item = await db.execute(select(CartItemModel).filter_by(cart_id=cart.id, movie_id=movie_id))
+    if existing_item.scalars().first():
+        raise HTTPException(status_code=400, detail="Movie is already in the cart")
 
 
 @cart_router.post("/{movie_id}/add", response_model=CartItemResponseSchema)
@@ -84,7 +86,9 @@ async def add_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_
 
 @cart_router.delete("/{movie_id}/remove")
 async def remove_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_db)):
+
     """Remove a movie from the user's cart and log the event."""
+    
     try:
         cart = await get_cart_by_user(user_id, db)
 

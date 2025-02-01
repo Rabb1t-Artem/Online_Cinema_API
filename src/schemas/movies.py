@@ -112,3 +112,67 @@ class MovieUpdateSchema(BaseModel):
     model_config = {
         "from_attributes": True,
     }
+
+
+class MovieLikeSchema(BaseModel):
+    movie_id: int
+    is_liked: bool = False
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class MovieCommentCreateSchema(BaseModel):
+    content: str
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class MovieCommentSchema(MovieCommentCreateSchema):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class FavoriteMovieSchema(BaseModel):
+    user_id: int
+    movie_id: int
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class FavoriteMovieResponseSchema(BaseModel):
+    message: str
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class FavoriteMovieListSchema(BaseModel):
+    movies: List[MovieDetailSchema]
+
+    model_config = {
+        "from_attributes": True,
+    }
+
+
+class NotificationSchema(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {
+        "from_attributes": True,
+    }

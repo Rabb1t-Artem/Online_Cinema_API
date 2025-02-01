@@ -1,12 +1,24 @@
 import enum
 from datetime import datetime, date, timedelta, timezone
 from typing import List, Optional
+from sqlalchemy import (
+    ForeignKey,
+    String,
+    Boolean,
+    DateTime,
+    Enum,
+    Integer,
+    func,
+    Text,
+    Date,
+    UniqueConstraint,
+)
 
-from sqlalchemy import ForeignKey, String, Boolean, DateTime, Enum, Integer, func, Text, Date, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database import Base
 from database.models.carts import CartModel
+from database.models.movies import NotificationModel, CommentLikeModel
 from database.models.orders import OrderModel
 from database.validators import accounts as validators
 from security.passwords import hash_password, verify_password
@@ -45,7 +57,10 @@ class UserModel(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
     group_id: Mapped[int] = mapped_column(ForeignKey("user_groups.id", ondelete="CASCADE"), nullable=False)
@@ -68,6 +83,17 @@ class UserModel(Base):
 
     profile: Mapped[Optional["UserProfileModel"]] = relationship(
         "UserProfileModel", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    movie_likes: Mapped[List["MovieLikeModel"]] = relationship(
+        "MovieLikeModel", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    notifications: Mapped[List["NotificationModel"]] = relationship(
+        "NotificationModel", back_populates="user", cascade="all, delete-orphan"
+    )
+    comment_likes: Mapped[List["CommentLikeModel"]] = relationship(
+        "CommentLikeModel", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -140,7 +166,9 @@ class TokenBaseModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     token: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, default=generate_secure_token)
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc) + timedelta(days=1)
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc) + timedelta(days=1),
     )
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

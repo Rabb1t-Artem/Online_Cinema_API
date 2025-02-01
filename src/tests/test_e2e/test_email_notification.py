@@ -4,7 +4,12 @@ import pytest
 import httpx
 from bs4 import BeautifulSoup
 
-from database import ActivationTokenModel, UserModel, RefreshTokenModel, PasswordResetTokenModel
+from database import (
+    ActivationTokenModel,
+    UserModel,
+    RefreshTokenModel,
+    PasswordResetTokenModel,
+)
 
 
 @pytest.mark.e2e
@@ -272,7 +277,10 @@ def test_reset_password(e2e_client, db_session, settings):
     reset_token = reset_token_record.token
 
     reset_url = "/api/v1/accounts/reset-password/complete/"
-    response = e2e_client.post(reset_url, json={"email": user_email, "password": new_password, "token": reset_token})
+    response = e2e_client.post(
+        reset_url,
+        json={"email": user_email, "password": new_password, "token": reset_token},
+    )
 
     assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
     response_data = response.json()

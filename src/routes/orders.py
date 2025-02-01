@@ -50,7 +50,10 @@ async def create_order(user_id: int, db: AsyncSession = Depends(get_db)):
         for order in pending_orders:
             order_movie_ids = [item.movie_id for item in order.items]
             if any(item.movie_id in order_movie_ids for item in movies_in_cart):
-                raise HTTPException(status_code=400, detail="Some movies are already in another pending order")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Some movies are already in another pending order",
+                )
 
         # Calculate the total amount
         total_amount = sum(movie.price for movie in movies_in_cart)

@@ -399,7 +399,11 @@ def test_profile_creation_fails_on_s3_upload_error(
         "avatar": ("avatar.jpg", img_bytes, "image/jpeg"),
     }
 
-    with patch.object(s3_storage_fake, "upload_file", side_effect=S3FileUploadError("Simulated S3 failure")):
+    with patch.object(
+        s3_storage_fake,
+        "upload_file",
+        side_effect=S3FileUploadError("Simulated S3 failure"),
+    ):
         response = client.post(profile_url, headers=headers, files=files)
 
     assert response.status_code == 500, f"Expected 500, got {response.status_code}"

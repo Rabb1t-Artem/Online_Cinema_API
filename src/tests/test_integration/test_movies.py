@@ -291,19 +291,22 @@ def test_get_movie_by_id_fields_match_database(client, db_session, seed_database
     assert response_data["country"]["name"] == random_movie.country.name, "Country name does not match."
 
     expected_genres = sorted(
-        [{"id": genre.id, "name": genre.name} for genre in random_movie.genres], key=lambda x: x["id"]
+        [{"id": genre.id, "name": genre.name} for genre in random_movie.genres],
+        key=lambda x: x["id"],
     )
     response_genres = sorted(response_data["genres"], key=lambda x: x["id"])
     assert response_genres == expected_genres, "Genres do not match."
 
     expected_actors = sorted(
-        [{"id": actor.id, "name": actor.name} for actor in random_movie.actors], key=lambda x: x["id"]
+        [{"id": actor.id, "name": actor.name} for actor in random_movie.actors],
+        key=lambda x: x["id"],
     )
     response_actors = sorted(response_data["actors"], key=lambda x: x["id"])
     assert response_actors == expected_actors, "Actors do not match."
 
     expected_languages = sorted(
-        [{"id": lang.id, "name": lang.name} for lang in random_movie.languages], key=lambda x: x["id"]
+        [{"id": lang.id, "name": lang.name} for lang in random_movie.languages],
+        key=lambda x: x["id"],
     )
     response_languages = sorted(response_data["languages"], key=lambda x: x["id"])
     assert response_languages == expected_languages, "Languages do not match."

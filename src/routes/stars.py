@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from starlette import status
 
 from database import get_db
 from database.models.movies import StarModel
@@ -30,6 +31,7 @@ router = APIRouter()
             "content": {"application/json": {"example": {"detail": "No stars found."}}},
         }
     },
+    tags=["Stars"],
 )
 def get_star_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -55,8 +57,8 @@ def get_star_list(
 
     response = StarListResponseSchema(
         stars=star_list,
-        prev_page=f"/theater/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None,
-        next_page=f"/theater/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
+        prev_page=(f"/theater/stars/?page={page - 1}&per_page={per_page}" if page > 1 else None),
+        next_page=(f"/theater/stars/?page={page + 1}&per_page={per_page}" if page < total_pages else None),
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -80,7 +82,8 @@ def get_star_list(
             "content": {"application/json": {"example": {"detail": "Invalid input data."}}},
         },
     },
-    status_code=201,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Stars", "Create"],
 )
 def create_star(star_data: StarCreateSchema, db: Session = Depends(get_db)) -> StarDetailSchema:
     """
@@ -89,7 +92,10 @@ def create_star(star_data: StarCreateSchema, db: Session = Depends(get_db)) -> S
     existing_star = db.query(StarModel).filter(StarModel.name == star_data.name).first()
 
     if existing_star:
-        raise HTTPException(status_code=409, detail=f"A star with the name '{star_data.name}' already exists.")
+        raise HTTPException(
+            status_code=409,
+            detail=f"A star with the name '{star_data.name}' already exists.",
+        )
 
     star = StarModel(
         name=star_data.name,
@@ -118,6 +124,7 @@ def create_star(star_data: StarCreateSchema, db: Session = Depends(get_db)) -> S
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         }
     },
+    tags=["Stats", "ID_find"],
 )
 def get_star_by_id(
     star_id: int,
@@ -149,7 +156,8 @@ def get_star_by_id(
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
-    status_code=204,
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Stars", "Delete"],
 )
 def delete_star(
     star_id: int,
@@ -186,6 +194,7 @@ def delete_star(
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
+    tags=["Stars", "Update"],
 )
 def update_star(
     star_id: int,
