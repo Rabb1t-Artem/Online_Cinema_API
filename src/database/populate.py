@@ -48,7 +48,7 @@ class CSVDatabaseSeeder:
         data["crew"] = data["crew"].fillna("Unknown")
         data["crew"] = data["crew"].str.replace(r"\s+", "", regex=True)
         data["crew"] = data["crew"].apply(
-            lambda crew: ",".join(sorted(set(crew.split(",")))) if crew != "Unknown" else crew
+            lambda crew: (",".join(sorted(set(crew.split(",")))) if crew != "Unknown" else crew)
         )
         data["genre"] = data["genre"].fillna("Unknown")
         data["genre"] = data["genre"].str.replace("\u00a0", "", regex=True)

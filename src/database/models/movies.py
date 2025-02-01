@@ -154,11 +154,6 @@ class MovieModel(Base):
         "CertificationModel",
         back_populates="movies",
     )
-    budget: Mapped[float] = mapped_column(DECIMAL(15, 2), nullable=False)
-    revenue: Mapped[float] = mapped_column(Float, nullable=False)
-
-    country_id: Mapped[int] = mapped_column(ForeignKey("countries.id"), nullable=False)
-    country: Mapped["CountryModel"] = relationship("CountryModel", back_populates="movies")
     order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
     genres: Mapped[list["GenreModel"]] = relationship(
