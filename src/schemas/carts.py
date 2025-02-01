@@ -49,7 +49,3 @@ class CartResponseSchema(BaseModel):
     id: int
     user_id: int
     cart_items: List[CartItemResponseSchema]
-
-
-
-

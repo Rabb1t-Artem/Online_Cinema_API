@@ -42,18 +42,12 @@ def profile(
         validate_gender(profile_form.gender)
         validate_birth_date(profile_form.date_of_birth)
         if not profile_form.info.strip():
-            raise ValueError(
-                "Info field cannot be empty or contain only spaces."
-            )
+            raise ValueError("Info field cannot be empty or contain only spaces.")
         validate_image(profile_form.avatar)
     except ValueError as err:
         raise HTTPException(status_code=422, detail=str(err))
 
-    token_user = (
-        db.query(UserModel)
-        .filter(UserModel.id == access_token.get("user_id"))
-        .first()
-    )
+    token_user = db.query(UserModel).filter(UserModel.id == access_token.get("user_id")).first()
 
     if user_id != token_user.id and token_user.group.name.value != "admin":
         raise HTTPException(
@@ -63,9 +57,7 @@ def profile(
 
     user = db.query(UserModel).filter_by(id=user_id).first()
     if not user or not user.is_active:
-        raise HTTPException(
-            status_code=401, detail="User not found or not active."
-        )
+        raise HTTPException(status_code=401, detail="User not found or not active.")
 
     profile = db.query(UserProfileModel).filter_by(user_id=user.id).first()
     if profile:

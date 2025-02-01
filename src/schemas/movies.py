@@ -36,9 +36,7 @@ class MovieBaseSchema(BaseModel):
     description: str
     price: float = Field(..., ge=0)
 
-    model_config = {
-        "from_attributes": True
-    }
+    model_config = {"from_attributes": True}
 
     @field_validator("year")
     def validate_year(cls, value):
