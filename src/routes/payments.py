@@ -4,16 +4,15 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from database import get_db
+
 import stripe
 
-from schemas.payments import PaymentResponse, PaymentCreate
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from schemas.payments import Payment, PaymentItem
 from database.models.accounts import UserModel
 from database.models.orders import OrderModel
 from database.models.payments import PaymentModel, PaymentStatus
-from services.email_service import send_payment_confirmation
-from dependencies.auth import get_current_user
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from config.dependencies import get_db, get_current_user
 from config import settings
 
 router = APIRouter()
@@ -21,13 +20,14 @@ router = APIRouter()
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 conf = ConnectionConfig(
-    MAIL_USERNAME=settings.MAIL_USERNAME,
-    MAIL_PASSWORD=settings.MAIL_PASSWORD,
-    MAIL_FROM=settings.MAIL_FROM,
-    MAIL_PORT=settings.MAIL_PORT,
-    MAIL_SERVER=settings.MAIL_SERVER,
-    MAIL_TLS=True,
+    MAIL_USERNAME=settings.BaseAppSettings.EMAIL_HOST_USER,
+    MAIL_PASSWORD=settings.BaseAppSettings.EMAIL_HOST_PASSWORD,
+    MAIL_FROM=settings.BaseAppSettings.EMAIL_HOST_USER,
+    MAIL_PORT=settings.BaseAppSettings.EMAIL_PORT,
+    MAIL_SERVER=settings.BaseAppSettings.EMAIL_HOST,
+    MAIL_TLS=settings.BaseAppSettings.EMAIL_USE_TLS,
     MAIL_SSL=False,
+    USE_CREDENTIALS=True,
 )
 
 
@@ -60,12 +60,14 @@ async def send_payment_email(user_email: str, amount: float):
     await fm.send_message(message)
 
 
-@router.post("/payments/", response_model=PaymentResponse)
+@router.post("/payments/", response_model=Payment)
 async def create_payment(
-    payment: PaymentCreate, db: AsyncSession = Depends(get_db), current_user: UserModel = Depends(get_current_user)
+    payment: Payment,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
 ):
     """
-    Creates a new payment.
+    Creates a new payment and sends a confirmation email.
     """
     result = await db.execute(select(OrderModel).filter(OrderModel.id == payment.order_id))
     order = result.scalars().first()
@@ -84,18 +86,32 @@ async def create_payment(
             user_id=current_user.id,
             order_id=payment.order_id,
             amount=payment.amount,
-            status=PaymentStatus.pending,
+            status=PaymentStatus.successful,
             external_payment_id=stripe_response.get("id"),
         )
         db.add(new_payment)
         await db.commit()
         await db.refresh(new_payment)
-        return {"client_secret": stripe_response["client_secret"]}
+
+        # Add PaymentItems
+        for item in payment.payment_items:
+            payment_item = PaymentItem(
+                payment_id=new_payment.id,
+                order_item_id=item.order_item_id,
+                price_at_payment=item.price_at_payment,
+            )
+            db.add(payment_item)
+        await db.commit()
+
+        # Send payment confirmation email
+        await send_payment_email(current_user.email, payment.amount)
+
+        return new_payment
     else:
         raise HTTPException(status_code=400, detail="Payment failed. Try a different method.")
 
 
-@router.get("/payments/history/", response_model=List[PaymentResponse])
+@router.get("/payments/history/", response_model=List[Payment])
 async def get_payment_history(db: AsyncSession = Depends(get_db), current_user: UserModel = Depends(get_current_user)):
     """
     Retrieves the payment history for the current user.
@@ -106,7 +122,7 @@ async def get_payment_history(db: AsyncSession = Depends(get_db), current_user: 
     return result.scalars().all()
 
 
-@router.get("/admin/payments/", response_model=List[PaymentResponse])
+@router.get("/admin/payments/", response_model=List[Payment])
 async def get_admin_payment_history(
     user_id: Optional[int] = None,
     start_date: Optional[str] = None,
@@ -131,10 +147,12 @@ async def get_admin_payment_history(
 
 @router.post("/stripe/webhook/")
 async def stripe_webhook(
-    request: Request, db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks = BackgroundTasks()
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     """
-    Handles Stripe webhook events.
+    Handles Stripe webhook events and sends a payment confirmation email.
     """
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
@@ -169,7 +187,7 @@ async def stripe_webhook(
         payment = result.scalars().first()
 
         if payment:
-            payment.status = PaymentStatus.failed
+            payment.status = PaymentStatus.canceled
             await db.commit()
 
     return {"status": "success"}
