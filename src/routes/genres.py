@@ -96,7 +96,6 @@ async def get_genre_list(
     status_code=status.HTTP_201_CREATED,
     tags=["Genres", "Create"],
 )
-
 async def create_genre(genre_data: GenreCreateSchema, db: AsyncSession = Depends(get_db)) -> GenreDetailSchema:
     """
     Add a new genre to the database.

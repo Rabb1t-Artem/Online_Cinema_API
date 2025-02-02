@@ -87,7 +87,6 @@ async def get_movie_list(
         movies=movie_list,
         prev_page=f"/theater/movies/?page={page - 1}&per_page={per_page}" if page > 1 else None,
         next_page=f"/theater/movies/?page={page + 1}&per_page={per_page}" if page < total_pages else None,
-
         total_pages=total_pages,
         total_items=total_items,
     )
@@ -117,22 +116,20 @@ async def get_movie_list(
     status_code=status.HTTP_201_CREATED,
     tags=["Movies", "Create"],
 )
-
 async def create_movie(
     movie_data: MovieCreateSchema,
     db: AsyncSession = Depends(get_db),
 ) -> MovieDetailSchema:
-
     """
     Asynchronously add a new movie to the database.
     Checks for duplicates and automatically links or creates associated entities
     such as director, certification, genres, and stars.
     """
-    
+
     result = await db.execute(
         select(MovieModel).filter(MovieModel.name == movie_data.name, MovieModel.year == movie_data.year)
     )
-    
+
     existing_movie = result.scalars().first()
     if existing_movie:
         raise HTTPException(
@@ -149,7 +146,6 @@ async def create_movie(
             director = DirectorModel(name=movie_data.director.name)
             db.add(director)
             await db.flush()
-
 
         result = await db.execute(
             select(CertificationModel).filter(CertificationModel.name == movie_data.certification.name)
