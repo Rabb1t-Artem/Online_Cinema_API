@@ -1,6 +1,5 @@
 import os
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends, HTTPException, status
@@ -13,6 +12,7 @@ from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
 from database.models.accounts import UserModel
 from database import get_db
+from sqlalchemy.future import select
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 

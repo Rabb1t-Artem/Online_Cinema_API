@@ -20,6 +20,12 @@ class BaseEmailPasswordSchema(BaseModel):
         return accounts_validators.validate_password_strength(value)
 
 
+class ChangePasswordRequestSchema(BaseModel):
+    email: str
+    old_password: str
+    new_password: str
+
+
 class UserRegistrationRequestSchema(BaseEmailPasswordSchema):
     pass
 
