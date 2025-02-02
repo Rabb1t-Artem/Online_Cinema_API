@@ -5,6 +5,7 @@ from sqlalchemy import Integer, ForeignKey, String, DECIMAL, DateTime, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from database import Base
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from database.models.accounts import UserModel
     from database.models.movies import MovieModel

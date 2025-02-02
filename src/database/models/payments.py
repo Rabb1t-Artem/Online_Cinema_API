@@ -8,6 +8,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from database import Base
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from database.models.orders import OrderModel, OrderItemModel
     from database.models.accounts import UserModel
