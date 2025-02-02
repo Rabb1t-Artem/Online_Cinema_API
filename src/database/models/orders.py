@@ -3,10 +3,12 @@ from typing import List
 from datetime import datetime
 from sqlalchemy import Integer, ForeignKey, String, DECIMAL, DateTime, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from database.models.base import Base
-from database.models.accounts import UserModel
-from database.models.movies import MovieModel
-from database.models.payments import PaymentModel, PaymentItemModel
+from database import Base
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from database.models.accounts import UserModel
+    from database.models.movies import MovieModel
+    from database.models.payments import PaymentModel, PaymentItemModel
 
 
 class OrderModel(Base):
