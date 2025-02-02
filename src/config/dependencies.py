@@ -11,10 +11,14 @@ from security.interfaces import JWTAuthManagerInterface
 from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
 from database.models.accounts import UserModel
-from database import get_db
 from sqlalchemy.future import select
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+
+
+def get_db():
+    from database.session_sqlite import get_sqlite_db
+    return get_sqlite_db()
 
 
 def get_settings() -> BaseAppSettings:
