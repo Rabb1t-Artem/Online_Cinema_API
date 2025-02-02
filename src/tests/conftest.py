@@ -117,15 +117,18 @@ from database.models.accounts import UserModel
 from database.models.movies import MovieModel
 from database import get_db
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
+
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_db():
     await reset_test_database()
+
 
 @pytest.fixture(scope="function")
 def app_with_test_db():
@@ -133,10 +136,12 @@ def app_with_test_db():
     yield app
     app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="function")
 async def async_client(app_with_test_db) -> AsyncClient:
     async with AsyncClient(app=app_with_test_db, base_url="http://test") as client:
         yield client
+
 
 @pytest.fixture(scope="function")
 async def create_test_user():
@@ -146,6 +151,7 @@ async def create_test_user():
         await db.commit()
         await db.refresh(user)
         return user
+
 
 @pytest.fixture(scope="function")
 async def create_test_movie():

@@ -13,6 +13,7 @@ async def test_view_empty_cart(async_client: AsyncClient, create_test_user):
     assert response.status_code == 404
     assert response.json()["detail"] == "Cart is empty"
 
+
 # Тест для додавання фільму до кошика та перевірки помилки при повторному додаванні
 @pytest.mark.asyncio
 async def test_add_movie_to_cart(async_client: AsyncClient, create_test_user, create_test_movie):
@@ -30,6 +31,7 @@ async def test_add_movie_to_cart(async_client: AsyncClient, create_test_user, cr
     response_dup = await async_client.post(f"/cart/{movie.id}/add", params={"user_id": user.id})
     assert response_dup.status_code == 400
     assert response_dup.json()["detail"] == "Movie is already in the cart"
+
 
 # Тест для видалення фільму з кошика
 @pytest.mark.asyncio
@@ -51,6 +53,7 @@ async def test_remove_movie_from_cart(async_client: AsyncClient, create_test_use
     assert remove_again_response.status_code == 404
     assert remove_again_response.json()["detail"] == "Movie is not in the cart"
 
+
 # Тест для очищення кошика
 @pytest.mark.asyncio
 async def test_clear_cart(async_client: AsyncClient, create_test_user, create_test_movie):
@@ -71,6 +74,7 @@ async def test_clear_cart(async_client: AsyncClient, create_test_user, create_te
     get_response = await async_client.get("/cart", params={"user_id": user.id})
     assert get_response.status_code == 404
     assert get_response.json()["detail"] == "Cart is empty"
+
 
 # Тест для перегляду кошика адміністратором
 @pytest.mark.asyncio
@@ -108,4 +112,3 @@ async def test_cannot_add_purchased_movie(async_client: AsyncClient, create_test
 
     assert response.status_code == 400
     assert response.json()["detail"] == "You have already purchased this movie"
-

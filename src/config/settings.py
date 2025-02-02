@@ -61,6 +61,7 @@ class Settings(BaseAppSettings):
 #             str(self.BASE_DIR / "database" / "seed_data" / "test_data.csv"),
 #         )
 
+
 class TestingSettings(BaseAppSettings):
     SECRET_KEY_ACCESS: str = "TEST_SECRET_KEY_ACCESS"
     SECRET_KEY_REFRESH: str = "TEST_SECRET_KEY_REFRESH"

@@ -19,6 +19,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
 def get_db():
     from database.session_sqlite import get_sqlite_db
+
     return get_sqlite_db()
 
 
@@ -67,9 +68,9 @@ def get_s3_storage_client(
     )
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()
-) -> UserModel | None:
+async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()) -> UserModel | None:
     from database import get_db
+
     db: AsyncSession = await anext(get_db())
     try:
         payload = JWTAuthManager(
