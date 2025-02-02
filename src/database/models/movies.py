@@ -21,6 +21,7 @@ from sqlalchemy import func
 
 from database import Base
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from database.models.orders import OrderItemModel
     from database.models.accounts import UserModel

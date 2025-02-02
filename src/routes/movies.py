@@ -139,7 +139,9 @@ async def create_movie(
         )
 
     try:
-        result_director = await db.execute(select(DirectorModel).filter(DirectorModel.name == movie_data.directors.name))
+        result_director = await db.execute(
+            select(DirectorModel).filter(DirectorModel.name == movie_data.directors.name)
+        )
         director = result_director.scalar_one_or_none()
 
         if not director:

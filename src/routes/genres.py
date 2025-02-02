@@ -47,7 +47,9 @@ async def get_genre_list(
 
     total_items = len(query.scalars().all())
 
-    query_pagination = await db.execute(select(GenreModel).order_by(GenreModel.name.asc()).offset(offset).limit(per_page))
+    query_pagination = await db.execute(
+        select(GenreModel).order_by(GenreModel.name.asc()).offset(offset).limit(per_page)
+    )
     genres = query_pagination.scalars().all()
 
     if not genres:
@@ -249,9 +251,7 @@ async def get_movies_by_genre(genre_id: int, db: AsyncSession = Depends(get_db))
     if not genre:
         raise HTTPException(status_code=404, detail="Genre not found.")
 
-    result = await db.execute(
-        select(MovieModel).join(MoviesGenresModel).filter_by(genre_id = genre_id)
-    )
+    result = await db.execute(select(MovieModel).join(MoviesGenresModel).filter_by(genre_id=genre_id))
     movies = result.scalars().all()
 
     return movies

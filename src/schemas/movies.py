@@ -107,7 +107,7 @@ class MovieUpdateSchema(BaseModel):
     year: int | None = None
     time: int | None = Field(None, ge=0)
     imdb: float | None = Field(None, ge=0, le=100)
-    votes: int  | None  = Field(None, ge=0)
+    votes: int | None = Field(None, ge=0)
     meta_score: float | None = Field(None, ge=0)
     gross: float | None = Field(None, ge=0)
     description: str | None = None
