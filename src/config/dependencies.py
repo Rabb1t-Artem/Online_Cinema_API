@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -71,7 +72,7 @@ def get_s3_storage_client(
 async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()) -> UserModel | None:
     from database import get_db
 
-    db: AsyncSession = await anext(get_db())
+    db: AsyncSession = await asyncio.anext(get_db())
     try:
         payload = JWTAuthManager(
             secret_key_access=settings.SECRET_KEY_ACCESS,
