@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from config import get_settings
 from database import Base
 
+
 settings = get_settings()
 
 TEST_DATABASE_URL = settings.TEST_DATABASE_URL  # База для тестів

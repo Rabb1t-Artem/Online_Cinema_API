@@ -142,5 +142,3 @@ async def view_user_cart(user_id: int, db: AsyncSession = Depends(get_db)) -> Ca
         raise http_error
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-
-
