@@ -13,6 +13,7 @@ from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
 from database.models.accounts import UserModel
 from database import get_db
+from sqlalchemy.future import select
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 

@@ -20,6 +20,7 @@ from config import (
     BaseAppSettings,
     get_accounts_email_notificator,
 )
+from config.dependencies import get_current_user
 from database import (
     get_db,
     UserModel,
@@ -30,11 +31,12 @@ from database import (
     RefreshTokenModel,
 )
 from exceptions import BaseSecurityError
-from schemas import (
+from schemas.accounts import (
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
     MessageResponseSchema,
     UserActivationRequestSchema,
+    ChangePasswordRequestSchema,
     PasswordResetRequestSchema,
     PasswordResetCompleteRequestSchema,
     UserLoginResponseSchema,
@@ -43,6 +45,8 @@ from schemas import (
     TokenRefreshResponseSchema,
 )
 from security.interfaces import JWTAuthManagerInterface
+from security.passwords import pwd_context
+from database.validators.accounts import validate_password_strength
 
 router = APIRouter()
 
@@ -209,6 +213,53 @@ async def activate_account(
 
 
 @router.post(
+    "change-password/",
+    response_model=MessageResponseSchema,
+    summary="Change Password",
+    description="Change the password for a user's account.",
+    status_code=status.HTTP_200_OK,
+)
+async def change_password(
+        change_password_data: ChangePasswordRequestSchema,
+        db: AsyncSession = Depends(get_db),
+) -> MessageResponseSchema:
+    """
+    Endpoint to change password for a user's account.
+    """
+    result = await db.execute(
+        select(UserModel).where(UserModel.email == change_password_data.email)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not exist.",
+        )
+
+    if not pwd_context.verify(change_password_data.old_password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Old password is incorrect.",
+        )
+
+    try:
+        validate_password_strength(change_password_data.new_password)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    hashed_new_password = pwd_context.hash(change_password_data.new_password)
+
+    user.password = hashed_new_password
+    await db.commit()
+
+    return MessageResponseSchema(message="Password changed successfully.")
+
+
+@router.post(
     "/password-reset/request/",
     response_model=MessageResponseSchema,
     summary="Request Password Reset Token",
@@ -320,6 +371,14 @@ async def reset_password(
         )
 
     try:
+        validate_password_strength(data.password)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    try:
         user.password = data.password
         await db.delete(token_record)
         await db.commit()
@@ -337,6 +396,82 @@ async def reset_password(
     )
 
     return MessageResponseSchema(message="Password reset successfully.")
+
+
+@router.post(
+    "/assign-role/",
+    response_model=MessageResponseSchema,
+    summary="Assign Role to User",
+    description="Assigns a role (USER, MODERATOR, ADMIN) to a user.",
+    status_code=status.HTTP_200_OK,
+    responses={
+        403: {
+            "description": "Forbidden - Only ADMIN can assign roles.",
+            "content": {"application/json": {"example": {"detail": "You do not have permission to assign roles."}}},
+        },
+        404: {
+            "description": "Not Found - User not found.",
+            "content": {"application/json": {"example": {"detail": "User with provided email does not exist."}}},
+        },
+        400: {
+            "description": "Bad Request - Invalid role.",
+            "content": {"application/json": {"example": {"detail": "Invalid role provided."}}},
+        },
+        500: {
+            "description": "Internal Server Error - An error occurred while processing the request.",
+            "content": {
+                "application/json": {"example": {"detail": "An error occurred while processing the request."}}
+            },
+        },
+    },
+)
+async def assign_role(
+    email: str,
+    role: UserGroupEnum,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+        Endpoint for assigning a role to a user.
+        The request must include the user's email and the desired role (USER, MODERATOR, ADMIN).
+        Only users with the ADMIN role can assign roles.
+        """
+    if not current_user.has_group(UserGroupEnum.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be an ADMIN to perform this action.",
+        )
+
+    result = await db.execute(select(UserModel).where(UserModel.email == email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    result = await db.execute(select(UserGroupModel).where(UserGroupModel.name == role))
+    group = result.scalar_one_or_none()
+
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role.",
+        )
+
+    user.group_id = group.id
+    try:
+        db.add(user)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing the request.",
+        )
+
+    return {"detail": f"User's role updated to {role.value}."}
 
 
 @router.post(
@@ -415,17 +550,36 @@ async def login_user(
     )
 
 
-# @router.post(
-#     "/logout/",
-#     response_model=MessageResponseSchema,
-#     summary="User Logout",
-#     description="Log the user out and invalidate the session.",
-#     status_code=status.HTTP_200_OK)
-# async def logout_user(
-#         db: AsyncSession = Depends(get_db),
-#         jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
-# ):
-#     pass
+@router.post(
+    "/logout/",
+    response_model=MessageResponseSchema,
+    summary="User Logout",
+    description="Log the user out and invalidate the session.",
+    status_code=status.HTTP_200_OK)
+async def logout_user(
+        token_data: TokenRefreshRequestSchema,
+        db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(RefreshTokenModel).where(token=token_data.refresh_token))
+    refresh_token_record = result.scalar_one_or_none()
+
+    if not refresh_token_record:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token not found.",
+        )
+
+    try:
+        await db.delete(refresh_token_record)
+        await db.commit()
+    except SQLAlchemyError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing the request.",
+        )
+
+    return MessageResponseSchema(message="Logged out successfully.")
 
 
 @router.post(
