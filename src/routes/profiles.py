@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from config import get_jwt_auth_manager, get_s3_storage_client
-from database import UserModel, UserProfileModel, get_db
+from database import get_db
+from database.models.accounts import UserModel, UserProfileModel
 from exceptions import TokenExpiredError
 from schemas.profiles import ProfileRequestForm, ProfileResponseSchema
 from security.http import get_token

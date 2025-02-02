@@ -27,10 +27,10 @@ if ! psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dt" | g
     echo "Applying all migrations..."
     alembic -c $ALEMBIC_CONFIG upgrade head
 
-    # Run database saver script only if alembic_version table was just created
-    echo "Running database saver script..."
-    python -m database.populate
-    echo "Database saver script completed."
+    # # Run database saver script only if alembic_version table was just created
+    # echo "Running database saver script..."
+    # python -m database.populate
+    # echo "Database saver script completed."
 
     exit 0
 fi
@@ -57,7 +57,7 @@ else
     alembic -c $ALEMBIC_CONFIG upgrade head
 fi
 
-# Run database saver script
-echo "Running database saver script..."
-python -m database.populate
-echo "Database saver script completed."
+# # Run database saver script
+# echo "Running database saver script..."
+# python -m database.populate
+# echo "Database saver script completed."
