@@ -12,7 +12,6 @@ from security.interfaces import JWTAuthManagerInterface
 from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
 from database.models.accounts import UserModel
-from database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
@@ -62,9 +61,10 @@ def get_s3_storage_client(
     )
 
 
-async def get_current_user(
-    db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), settings: Settings = Depends()
+async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()
 ) -> UserModel | None:
+    from database import get_db
+    db: AsyncSession = await anext(get_db())
     try:
         payload = JWTAuthManager(
             secret_key_access=settings.SECRET_KEY_ACCESS,

@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from database.models import movies, accounts, carts, orders, payments  # noqa: F401
 from database.models.base import Base
-from database.session_postgresql import postgresql_url
+from database.session_postgresql import POSTGRESQL_DATABASE_URL
 
 config = context.config
 
@@ -16,7 +16,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-async_engine = create_async_engine(postgresql_url, echo=True)
+async_engine = create_async_engine(POSTGRESQL_DATABASE_URL, echo=True)
 
 async_session = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
