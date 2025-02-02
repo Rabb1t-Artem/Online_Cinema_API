@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from starlette import status
 
-from database import get_db, UserModel
+from database import get_db
 from database.models.movies import (
     MovieModel,
     GenreModel,
@@ -22,6 +22,7 @@ from database.models.movies import (
     CommentLikeModel,
 )
 from database.models.orders import OrderItemModel
+from database.models.accounts import UserModel
 from config.dependencies import get_current_user
 from schemas import (
     MovieListResponseSchema,

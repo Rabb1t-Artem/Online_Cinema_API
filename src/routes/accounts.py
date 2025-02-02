@@ -20,8 +20,8 @@ from config import (
     BaseAppSettings,
     get_accounts_email_notificator,
 )
-from database import (
-    get_db,
+from database import get_db
+from database.models.accounts import (
     UserModel,
     UserGroupModel,
     UserGroupEnum,
