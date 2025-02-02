@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from starlette import status
 
-from database import get_db, UserModel
+from database import get_db
 from database.models.movies import (
     MovieModel,
     GenreModel,
@@ -22,6 +22,7 @@ from database.models.movies import (
     CommentLikeModel,
 )
 from database.models.orders import OrderItemModel
+from database.models.accounts import UserModel
 from config.dependencies import get_current_user
 from schemas import (
     MovieListResponseSchema,
@@ -138,19 +139,20 @@ async def create_movie(
         )
 
     try:
-
-        result = await db.execute(select(DirectorModel).filter(DirectorModel.name == movie_data.director.name))
-        director = result.scalars().first()
+        result_director = await db.execute(
+            select(DirectorModel).filter(DirectorModel.name == movie_data.directors.name)
+        )
+        director = result_director.scalar_one_or_none()
 
         if not director:
-            director = DirectorModel(name=movie_data.director.name)
+            director = DirectorModel(name=movie_data.directors.name)
             db.add(director)
             await db.flush()
 
-        result = await db.execute(
+        result_certification = await db.execute(
             select(CertificationModel).filter(CertificationModel.name == movie_data.certification.name)
         )
-        certification = result.scalars().first()
+        certification = result_certification.scalars().first()
 
         if not certification:
             certification = CertificationModel(name=movie_data.certification.name)
@@ -159,20 +161,20 @@ async def create_movie(
 
         genres = []
         for genre_name in movie_data.genres:
-            result = await db.execute(select(GenreModel).filter(GenreModel.name == genre_name))
-            genre = result.scalars().first()
+            result_genres = await db.execute(select(GenreModel).filter(GenreModel.name == genre_name.name))
+            genre = result_genres.scalars().first()
             if not genre:
-                genre = GenreModel(name=genre_name)
+                genre = GenreModel(name=genre_name.name)
                 db.add(genre)
                 await db.flush()
             genres.append(genre)
 
         stars = []
         for star_name in movie_data.stars:
-            result = await db.execute(select(StarModel).filter(StarModel.name == star_name))
-            star = result.scalars().first()
+            result_stars = await db.execute(select(StarModel).filter(StarModel.name == star_name))
+            star = result_stars.scalars().first()
             if not star:
-                star = StarModel(name=star_name)
+                star = StarModel(name=star_name.name)
                 db.add(star)
                 await db.flush()
             stars.append(star)
@@ -187,7 +189,7 @@ async def create_movie(
             gross=movie_data.gross,
             description=movie_data.description,
             price=movie_data.price,
-            director=director,
+            directors=movie_data.directors,
             certification=certification,
             genres=genres,
             stars=stars,
@@ -230,7 +232,7 @@ async def get_movie_by_id(
     result = await db.execute(
         select(MovieModel)
         .options(
-            joinedload(MovieModel.director),
+            joinedload(MovieModel.directors),
             joinedload(MovieModel.certification),
             joinedload(MovieModel.genres),
             joinedload(MovieModel.stars),
@@ -351,16 +353,17 @@ async def like_movie(
     """
     result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
     movie = result.scalars().first()
+
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    result = await db.execute(
+    result_like = await db.execute(
         select(MovieLikeModel).filter(
             MovieLikeModel.movie_id == movie_id,
             MovieLikeModel.user_id == current_user.id,
         )
     )
-    like_entry = result.scalars().first()
+    like_entry = result_like.scalar_one_or_none()
 
     if like_entry:
         like_entry.is_liked = is_liked
@@ -386,8 +389,13 @@ async def get_movie_likes(movie_id: int, db: AsyncSession = Depends(get_db)):
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    likes_count = await db.scalar(select(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True).count())
-    dislikes_count = await db.scalar(select(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False).count())
+    likes_count = await db.scalar(
+        select(func.count()).select_from(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=True)
+    )
+
+    dislikes_count = await db.scalar(
+        select(func.count()).select_from(MovieLikeModel).filter_by(movie_id=movie_id, is_liked=False)
+    )
 
     return {"movie_id": movie_id, "likes": likes_count, "dislikes": dislikes_count}
 
@@ -531,8 +539,8 @@ async def get_favorite_movies(
     if sort_by:
         if sort_by == "name":
             query = query.order_by(MovieModel.name)
-        elif sort_by == "release_date":
-            query = query.order_by(MovieModel.release_date)
+        elif sort_by == "year":
+            query = query.order_by(MovieModel.year)
 
     result = await db.execute(query)
     favorite_movies = result.scalars().all()
@@ -558,12 +566,12 @@ async def rate_movie(
     if not movie:
         raise HTTPException(status_code=404, detail="Movie not found.")
 
-    result = await db.execute(
+    result_rating = await db.execute(
         select(MovieRatingModel).filter(
             MovieRatingModel.movie_id == movie_id, MovieRatingModel.user_id == current_user.id
         )
     )
-    existing_rating = result.scalars().first()
+    existing_rating = result_rating.scalars().first()
 
     if existing_rating:
         existing_rating.rating = rating
@@ -633,7 +641,7 @@ async def reply_to_comment(
         content=content,
         movie_id=parent_comment.movie_id,
         user_id=current_user.id,
-        parent_id=comment_id,
+        id=comment_id,
     )
     db.add(reply)
     await db.commit()

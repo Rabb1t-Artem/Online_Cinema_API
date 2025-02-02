@@ -220,15 +220,13 @@ async def activate_account(
     status_code=status.HTTP_200_OK,
 )
 async def change_password(
-        change_password_data: ChangePasswordRequestSchema,
-        db: AsyncSession = Depends(get_db),
+    change_password_data: ChangePasswordRequestSchema,
+    db: AsyncSession = Depends(get_db),
 ) -> MessageResponseSchema:
     """
     Endpoint to change password for a user's account.
     """
-    result = await db.execute(
-        select(UserModel).where(UserModel.email == change_password_data.email)
-    )
+    result = await db.execute(select(UserModel).where(UserModel.email == change_password_data.email))
     user = result.scalar_one_or_none()
 
     if not user:
@@ -432,10 +430,10 @@ async def assign_role(
     current_user: UserModel = Depends(get_current_user),
 ):
     """
-        Endpoint for assigning a role to a user.
-        The request must include the user's email and the desired role (USER, MODERATOR, ADMIN).
-        Only users with the ADMIN role can assign roles.
-        """
+    Endpoint for assigning a role to a user.
+    The request must include the user's email and the desired role (USER, MODERATOR, ADMIN).
+    Only users with the ADMIN role can assign roles.
+    """
     if not current_user.has_group(UserGroupEnum.ADMIN):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -555,10 +553,11 @@ async def login_user(
     response_model=MessageResponseSchema,
     summary="User Logout",
     description="Log the user out and invalidate the session.",
-    status_code=status.HTTP_200_OK)
+    status_code=status.HTTP_200_OK,
+)
 async def logout_user(
-        token_data: TokenRefreshRequestSchema,
-        db: AsyncSession = Depends(get_db),
+    token_data: TokenRefreshRequestSchema,
+    db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(RefreshTokenModel).where(token=token_data.refresh_token))
     refresh_token_record = result.scalar_one_or_none()

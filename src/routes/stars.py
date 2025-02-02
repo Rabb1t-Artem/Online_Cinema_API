@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
@@ -44,17 +44,19 @@ async def get_star_list(
     """
     offset = (page - 1) * per_page
 
-    result = await db.execute(select(StarModel).order_by(StarModel.name))
-    stars = result.scalars().offset(offset).limit(per_page).all()
+    query = select(StarModel).order_by(StarModel.name).offset(offset).limit(per_page)
+
+    result = await db.execute(query)
+    stars = result.scalars().all()
 
     if not stars:
         raise HTTPException(status_code=404, detail="No stars found.")
 
     star_list = [StarSchema.model_validate(star) for star in stars]
 
-    result = await db.execute(select(StarModel))
-    total_items = result.scalars().count()
+    count_result = await db.execute(select(func.count(StarModel.id)))
 
+    total_items = count_result.scalar() or 0
     total_pages = (total_items + per_page - 1) // per_page
 
     response = StarListResponseSchema(
