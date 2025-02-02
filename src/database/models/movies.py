@@ -1,7 +1,7 @@
 from typing import Optional, List
 import uuid
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     String,
@@ -17,9 +17,14 @@ from sqlalchemy import (
     DateTime,
 )
 from sqlalchemy.orm import mapped_column, Mapped, relationship
+from sqlalchemy import func
 
-from database import Base, UserModel
-from database.models.orders import OrderItemModel
+from database import Base
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from database.models.orders import OrderItemModel
+    from database.models.accounts import UserModel
 
 
 MoviesGenresModel = Table(
@@ -187,13 +192,13 @@ class MovieModel(Base):
 class MovieLikeModel(Base):
     __tablename__ = "movie_likes"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
-    is_liked = Column(Boolean, nullable=False, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    movie_id: Mapped[int] = mapped_column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
+    is_liked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    movie = relationship("MovieModel", back_populates="likes")
-    user = relationship("UserModel", back_populates="likes")
+    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="likes")
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="likes")
 
     __table_args__ = (UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),)
 
@@ -201,14 +206,14 @@ class MovieLikeModel(Base):
 class MovieCommentModel(Base):
     __tablename__ = "movie_comments"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    movie_id = Column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    content = Column(String(500), nullable=False)
-    created_at = Column(DateTime, default=datetime.UTC)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    movie_id: Mapped[int] = mapped_column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    content: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
 
-    movie = relationship("MovieModel", back_populates="comments")
-    user = relationship("UserModel", back_populates="comments")
+    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="comments")
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="comments")
 
     likes: Mapped[List["CommentLikeModel"]] = relationship(
         "CommentLikeModel", back_populates="comment", cascade="all, delete-orphan"
@@ -250,7 +255,7 @@ class NotificationModel(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     message: Mapped[str] = mapped_column(String(255), nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=datetime.UTC, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="notifications")
 
@@ -266,7 +271,7 @@ class CommentLikeModel(Base):
     comment_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("movie_comments.id", ondelete="CASCADE"), nullable=False
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=datetime.UTC, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="comment_likes")
     comment: Mapped["MovieCommentModel"] = relationship("MovieCommentModel", back_populates="likes")

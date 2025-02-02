@@ -48,15 +48,26 @@ class Settings(BaseAppSettings):
     JWT_SIGNING_ALGORITHM: str = os.getenv("JWT_SIGNING_ALGORITHM", "HS256")
 
 
+# class TestingSettings(BaseAppSettings):
+#     SECRET_KEY_ACCESS: str = "SECRET_KEY_ACCESS"
+#     SECRET_KEY_REFRESH: str = "SECRET_KEY_REFRESH"
+#     JWT_SIGNING_ALGORITHM: str = "HS256"
+#
+#     def model_post_init(self, __context: dict[str, Any] | None = None) -> None:
+#         object.__setattr__(self, "PATH_TO_DB", ":memory:")
+#         object.__setattr__(
+#             self,
+#             "PATH_TO_MOVIES_CSV",
+#             str(self.BASE_DIR / "database" / "seed_data" / "test_data.csv"),
+#         )
+
+
 class TestingSettings(BaseAppSettings):
-    SECRET_KEY_ACCESS: str = "SECRET_KEY_ACCESS"
-    SECRET_KEY_REFRESH: str = "SECRET_KEY_REFRESH"
+    SECRET_KEY_ACCESS: str = "TEST_SECRET_KEY_ACCESS"
+    SECRET_KEY_REFRESH: str = "TEST_SECRET_KEY_REFRESH"
     JWT_SIGNING_ALGORITHM: str = "HS256"
 
+    TEST_DATABASE_URL: str = "sqlite+aiosqlite:///test_database.db"
+
     def model_post_init(self, __context: dict[str, Any] | None = None) -> None:
-        object.__setattr__(self, "PATH_TO_DB", ":memory:")
-        object.__setattr__(
-            self,
-            "PATH_TO_MOVIES_CSV",
-            str(self.BASE_DIR / "database" / "seed_data" / "test_data.csv"),
-        )
+        object.__setattr__(self, "PATH_TO_DB", self.TEST_DATABASE_URL)
