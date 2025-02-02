@@ -17,10 +17,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from database import Base
-from database.models.carts import CartModel
-from database.models.movies import NotificationModel, CommentLikeModel, MovieLikeModel
-from database.models.orders import OrderModel
-from database.models.payments import PaymentModel
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from database.models.carts import CartModel
+    from database.models.movies import NotificationModel, CommentLikeModel, MovieLikeModel
+    from database.models.orders import OrderModel
+    from database.models.payments import PaymentModel
 from database.validators import accounts as validators
 from security.passwords import hash_password, verify_password
 from security.utils import generate_secure_token

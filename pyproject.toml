@@ -3,14 +3,14 @@ name = "src"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Rabb1t-Artem",email = "79219648+Rabb1t-Artem@users.noreply.github.com"}
+    {name = "Rabb1t-Artem", email = "79219648+Rabb1t-Artem@users.noreply.github.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[all] (>=0.115.8,<0.116.0)",
     "sqlalchemy (>=2.0.37,<3.0.0)",
-    "alembic (>=1.14.1,<2.0.0)",
+    "alembic (>=1.14.1,<2.0.0)", 
     "flake8 (>=7.1.1,<8.0.0)",
     "aiosqlite (>=0.20.0,<0.21.0)",
     "asyncpg (>=0.30.0,<0.31.0)",
@@ -34,12 +34,36 @@ dependencies = [
     "boto3 (>=1.36.11,<2.0.0)",
     "botocore (>=1.36.11,<2.0.0)",
     "pillow (>=11.1.0,<12.0.0)",
-    "python-multipart (>=0.0.20,<0.0.21)"
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "mypy (>=1.14.1,<2.0.0)"
 ]
 
 [tool.black]
 line-length = 119
 
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+check_untyped_defs = false
+warn_return_any = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+exclude = "/(venv|tests|migrations|alembic)/"
+
+[[tool.mypy.overrides]]
+module = [
+    "venv.*",
+    "security.*",
+    "exceptions.*", 
+    "storages.*",
+    "tests.*"
+]
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_untyped_defs = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

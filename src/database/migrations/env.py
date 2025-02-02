@@ -5,7 +5,7 @@ from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
-from database.models import movies, accounts  # noqa: F401
+from database.models import movies, accounts, carts, orders, payments  # noqa: F401
 from database.models.base import Base
 from database.session_postgresql import postgresql_url
 
