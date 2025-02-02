@@ -1,22 +1,43 @@
+from datetime import datetime
+from decimal import Decimal
+from random import choice, randint
+
 import pandas as pd
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from tqdm import tqdm
 
 from config import get_settings
-from database import MovieModel, get_async_db_session
-from database import (
-    CountryModel,
-    GenreModel,
-    ActorModel,
-    MoviesGenresModel,
-    ActorsMoviesModel,
-    LanguageModel,
-    MoviesLanguagesModel,
+from database.models.accounts import (
+    ActivationTokenModel,
+    PasswordResetTokenModel,
+    RefreshTokenModel,
+    UserModel,
+    UserProfileModel,
+    GenderEnum,
     UserGroupEnum,
     UserGroupModel,
 )
+from database.models.movies import (
+    MoviesCertificationsModel,
+    MoviesDirectorsModel,
+    StarsMoviesModel,
+    CertificationModel,
+    DirectorModel,
+    StarModel,
+    MovieModel,
+    MoviesGenresModel,
+    GenreModel,
+    CommentLikeModel,
+    NotificationModel,
+    MovieRatingModel,
+    FavoriteMovieModel,
+    MovieCommentModel,
+    MovieLikeModel,
+)
+from database.models.orders import OrderItemModel, OrderModel
+from database.models.payments import PaymentStatus, PaymentModel, PaymentItemModel
 
 
 class CSVDatabaseSeeder:
@@ -84,43 +105,141 @@ class CSVDatabaseSeeder:
     async def seed(self):
         try:
             async with self._db_session.begin():
+                # Додавання груп користувачів
                 await self._seed_user_groups()
 
-                data = self._preprocess_csv()
+                # Додавання користувачів та профілів
+                users_data = [
+                    {"email": "user1@example.com", "raw_password": "password123", "group_name": UserGroupEnum.USER},
+                    {
+                        "email": "moderator@example.com",
+                        "raw_password": "password123",
+                        "group_name": UserGroupEnum.MODERATOR,
+                    },
+                    {"email": "admin@example.com", "raw_password": "password123", "group_name": UserGroupEnum.ADMIN},
+                ]
 
+                user_profiles_data = [
+                    {
+                        "email": "user1@example.com",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "gender": GenderEnum.MAN,
+                        "date_of_birth": "1990-05-15",
+                    },
+                    {
+                        "email": "moderator@example.com",
+                        "first_name": "Jane",
+                        "last_name": "Doe",
+                        "gender": GenderEnum.WOMAN,
+                        "date_of_birth": "1992-08-22",
+                    },
+                    {
+                        "email": "admin@example.com",
+                        "first_name": "Alice",
+                        "last_name": "Smith",
+                        "gender": GenderEnum.WOMAN,
+                        "date_of_birth": "1985-03-10",
+                    },
+                ]
+
+                # Створення користувачів
+                users = []
+                for user_data in users_data:
+                    group = await self._db_session.execute(
+                        select(UserGroupModel).filter_by(name=user_data["group_name"])
+                    )
+                    group = group.scalars().first()
+                    user = UserModel.create(
+                        email=user_data["email"], raw_password=user_data["raw_password"], group_id=group.id
+                    )
+                    users.append(user)
+
+                self._db_session.add_all(users)
+                await self._db_session.commit()
+
+                # Створення профілів для користувачів
+                user_profiles = []
+                for profile_data in user_profiles_data:
+                    user = await self._db_session.execute(select(UserModel).filter_by(email=profile_data["email"]))
+                    user = user.scalars().first()
+
+                    user_profile = UserProfileModel(
+                        first_name=profile_data["first_name"],
+                        last_name=profile_data["last_name"],
+                        gender=profile_data["gender"],
+                        date_of_birth=profile_data["date_of_birth"],
+                        user_id=user.id,
+                    )
+                    user_profiles.append(user_profile)
+
+                self._db_session.add_all(user_profiles)
+                await self._db_session.commit()
+
+                # Додавання токенів (активації, скидання пароля, refresh токенів)
+                activation_tokens = []
+                password_reset_tokens = []
+                refresh_tokens = []
+
+                for user in users:
+                    activation_token = ActivationTokenModel(user_id=user.id)
+                    password_reset_token = PasswordResetTokenModel(user_id=user.id)
+                    refresh_token = RefreshTokenModel.create(
+                        user_id=user.id, days_valid=30, token=generate_random_string()
+                    )
+
+                    activation_tokens.append(activation_token)
+                    password_reset_tokens.append(password_reset_token)
+                    refresh_tokens.append(refresh_token)
+
+                self._db_session.add_all(activation_tokens + password_reset_tokens + refresh_tokens)
+                await self._db_session.commit()
+
+                # Обробка інших даних (країни, жанри, актори, режисери тощо)
+                data = self._preprocess_csv()
                 countries = data["country"].unique()
                 genres = set(
                     genre.strip() for genres in data["genre"].dropna() for genre in genres.split(",") if genre.strip()
                 )
-                actors = set(
-                    actor.strip() for crew in data["crew"].dropna() for actor in crew.split(",") if actor.strip()
+                stars = set(star.strip() for crew in data["crew"].dropna() for star in crew.split(",") if star.strip())
+                directors = set(
+                    director.strip()
+                    for crew in data["directors"].dropna()
+                    for director in crew.split(",")
+                    if director.strip()
                 )
-                languages = set(
-                    lang.strip() for langs in data["orig_lang"].dropna() for lang in langs.split(",") if lang.strip()
+                certifications = set(
+                    certification.strip()
+                    for certs in data["certifications"].dropna()
+                    for certification in certs.split(",")
+                    if certification.strip()
                 )
 
-                country_map = await self._get_or_create_bulk(CountryModel, countries, "code")
                 genre_map = await self._get_or_create_bulk(GenreModel, list(genres), "name")
-                actor_map = await self._get_or_create_bulk(ActorModel, list(actors), "name")
-                language_map = await self._get_or_create_bulk(LanguageModel, list(languages), "name")
+                star_map = await self._get_or_create_bulk(StarModel, list(stars), "name")
+                director_map = await self._get_or_create_bulk(DirectorModel, list(directors), "name")
+                certification_map = await self._get_or_create_bulk(CertificationModel, list(certifications), "name")
 
+                # Створення фільмів
                 movies_data = []
                 movie_genres_data = []
-                movie_actors_data = []
-                movie_languages_data = []
+                movie_stars_data = []
+                movie_directors_data = []
+                movie_certifications_data = []
 
                 for _, row in tqdm(data.iterrows(), total=data.shape[0], desc="Processing movies"):
-                    country = country_map[row["country"]]
 
                     movie = {
                         "name": row["names"],
-                        "date": row["date_x"],
-                        "score": float(row["score"]),
-                        "overview": row["overview"],
-                        "status": row["status"],
-                        "budget": float(row["budget_x"]),
-                        "revenue": float(row["revenue"]),
-                        "country_id": country.id,
+                        "year": row["date_x"],
+                        "time": row["time"],
+                        "imdb": float(row["score"]),
+                        "votes": int(row["votes"]),
+                        "meta_score": float(row["meta_score"]) if row["meta_score"] else None,
+                        "gross": float(row["gross"]) if row["gross"] else None,
+                        "description": row["overview"],
+                        "price": float(row["price"]),
+                        "certification_id": certification_map[row["certifications"]].id,
                     }
                     movies_data.append(movie)
 
@@ -128,11 +247,7 @@ class CSVDatabaseSeeder:
                 movie_ids = result.scalars().all()
 
                 for i, (_, row) in enumerate(
-                    tqdm(
-                        data.iterrows(),
-                        total=data.shape[0],
-                        desc="Processing associations",
-                    )
+                    tqdm(data.iterrows(), total=data.shape[0], desc="Processing associations")
                 ):
                     movie_id = movie_ids[i]
 
@@ -141,19 +256,139 @@ class CSVDatabaseSeeder:
                             genre = genre_map[genre_name.strip()]
                             movie_genres_data.append({"movie_id": movie_id, "genre_id": genre.id})
 
-                    for actor_name in row["crew"].split(","):
-                        if actor_name.strip():
-                            actor = actor_map[actor_name.strip()]
-                            movie_actors_data.append({"movie_id": movie_id, "actor_id": actor.id})
+                    for star_name in row["crew"].split(","):
+                        if star_name.strip():
+                            star = star_map[star_name.strip()]
+                            movie_stars_data.append({"movie_id": movie_id, "star_id": star.id})
 
-                    for lang_name in row["orig_lang"].split(","):
-                        if lang_name.strip():
-                            language = language_map[lang_name.strip()]
-                            movie_languages_data.append({"movie_id": movie_id, "language_id": language.id})
+                    for director_name in row["directors"].split(","):
+                        if director_name.strip():
+                            director = director_map[director_name.strip()]
+                            movie_directors_data.append({"movie_id": movie_id, "director_id": director.id})
+
+                    for certification_name in row["certifications"].split(","):
+                        if certification_name.strip():
+                            certification = certification_map[certification_name.strip()]
+                            movie_certifications_data.append(
+                                {"movie_id": movie_id, "certification_id": certification.id}
+                            )
 
                 await self._db_session.execute(insert(MoviesGenresModel).values(movie_genres_data))
-                await self._db_session.execute(insert(ActorsMoviesModel).values(movie_actors_data))
-                await self._db_session.execute(insert(MoviesLanguagesModel).values(movie_languages_data))
+                await self._db_session.execute(insert(StarsMoviesModel).values(movie_stars_data))
+                await self._db_session.execute(insert(MoviesDirectorsModel).values(movie_directors_data))
+                await self._db_session.execute(insert(MoviesCertificationsModel).values(movie_certifications_data))
+                await self._db_session.commit()
+
+                movie_likes_data = []
+                for user in users:
+                    for movie_id in movie_ids[:3]:  # Додаємо перші 3 фільми для кожного користувача
+                        movie_like = MovieLikeModel(user_id=user.id, movie_id=movie_id, is_liked=choice([True, False]))
+                        movie_likes_data.append(movie_like)
+
+                self._db_session.add_all(movie_likes_data)
+                await self._db_session.commit()
+
+                # Створення коментарів до фільмів
+                movie_comments_data = []
+                for user in users:
+                    for movie_id in movie_ids[:3]:
+                        if randint(0, 1):  # 50% шанс на коментар
+                            movie_comment = MovieCommentModel(
+                                user_id=user.id,
+                                movie_id=movie_id,
+                                content=f"Great movie! {choice(['Amazing', 'Loved it', 'Must watch', 'Not bad'])}",
+                                created_at=datetime.now(),
+                            )
+                            movie_comments_data.append(movie_comment)
+
+                self._db_session.add_all(movie_comments_data)
+                await self._db_session.commit()
+
+                # Створення улюблених фільмів
+                favorite_movies_data = []
+                for user in users:
+                    for movie_id in movie_ids[:3]:
+                        favorite_movie = FavoriteMovieModel(user_id=user.id, movie_id=movie_id)
+                        favorite_movies_data.append(favorite_movie)
+
+                self._db_session.add_all(favorite_movies_data)
+                await self._db_session.commit()
+
+                # Створення рейтингів фільмів
+                movie_ratings_data = []
+                for user in users:
+                    for movie_id in movie_ids[:3]:
+                        rating = MovieRatingModel(user_id=user.id, movie_id=movie_id, rating=randint(1, 10))
+                        movie_ratings_data.append(rating)
+
+                self._db_session.add_all(movie_ratings_data)
+                await self._db_session.commit()
+
+                # Створення сповіщень для користувачів
+                notifications_data = []
+                for user in users:
+                    notification = NotificationModel(user_id=user.id, message="New movie added to your favorite list")
+                    notifications_data.append(notification)
+
+                self._db_session.add_all(notifications_data)
+                await self._db_session.commit()
+
+                # Створення лайків до коментарів
+                comment_likes_data = []
+                for user in users:
+                    for comment in movie_comments_data[:3]:  # Лайк 3 коментарі
+                        comment_like = CommentLikeModel(user_id=user.id, comment_id=comment.id)
+                        comment_likes_data.append(comment_like)
+
+                self._db_session.add_all(comment_likes_data)
+                await self._db_session.commit()
+
+                # Створення замовлень для користувачів
+                order_data = []
+                for user in users:
+                    order = OrderModel(user_id=user.id, status="pending", total_amount=Decimal("0.00"))
+                    order_data.append(order)
+
+                self._db_session.add_all(order_data)
+                await self._db_session.commit()
+
+                # Створення товарів у замовленнях
+                order_items_data = []
+                for order in order_data:
+                    for movie_id in movie_ids[:3]:  # Додаємо перші 3 фільми в замовлення
+                        order_item = OrderItemModel(
+                            order_id=order.id, movie_id=movie_id, price_at_order=Decimal("9.99")
+                        )
+                        order_items_data.append(order_item)
+
+                self._db_session.add_all(order_items_data)
+                await self._db_session.commit()
+
+                # Створення платежів для кожного замовлення
+                payment_data = []
+                for order in order_data:
+                    total_amount = sum(item.price_at_order for item in order.order_items)
+
+                    # Створення платежу
+                    payment = PaymentModel(
+                        user_id=order.user_id,
+                        order_id=order.id,
+                        amount=total_amount,
+                        status=PaymentStatus.successful,  # Тут можна змінити статус за потребою
+                        external_payment_id="external_id_example",  # Можна замінити на реальний ID
+                    )
+                    payment_data.append(payment)
+
+                    # Створення елементів платежу
+                    for item in order.order_items:
+                        payment_item = PaymentItemModel(
+                            payment_id=payment.id,
+                            order_item_id=item.id,
+                            price_at_payment=item.price_at_order,
+                        )
+                        self._db_session.add(payment_item)
+
+                self._db_session.add_all(payment_data)
                 await self._db_session.commit()
 
         except SQLAlchemyError as e:
