@@ -147,9 +147,7 @@ async def get_admin_payment_history(
 
 @router.post("/stripe/webhook/")
 async def stripe_webhook(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    background_tasks: BackgroundTasks = BackgroundTasks()
+    request: Request, db: AsyncSession = Depends(get_db), background_tasks: BackgroundTasks = BackgroundTasks()
 ):
     """
     Handles Stripe webhook events and sends a payment confirmation email.

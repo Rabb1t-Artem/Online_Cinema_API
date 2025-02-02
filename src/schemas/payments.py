@@ -4,10 +4,12 @@ from typing import List, Optional
 from pydantic import BaseModel
 from enum import Enum
 
+
 class PaymentStatusEnum(str, Enum):
     successful = "successful"
     canceled = "canceled"
     refunded = "refunded"
+
 
 class PaymentItem(BaseModel):
     id: int
@@ -17,6 +19,7 @@ class PaymentItem(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 class Payment(BaseModel):
     id: int
