@@ -31,8 +31,8 @@ class MovieBaseSchema(BaseModel):
     time: int = Field(..., ge=0)
     imdb: float = Field(..., ge=0, le=100)
     votes: int = Field(..., ge=0)
-    meta_score = Optional[float] = Field(..., ge=0)
-    gross = Optional[float] = Field(..., ge=0)
+    meta_score: float | None = Field(None, ge=0)
+    gross: float | None = Field(None, ge=0)
     description: str
     price: float = Field(..., ge=0)
 
@@ -48,7 +48,7 @@ class MovieBaseSchema(BaseModel):
 
 class MovieDetailSchema(MovieBaseSchema):
     id: int
-    director: DirectorSchema
+    directors: DirectorSchema
     genres: List[GenreSchema]
     stars: List[StarSchema]
     certification: CertificationSchema
@@ -88,10 +88,14 @@ class MovieCreateSchema(BaseModel):
     time: int = Field(..., ge=0)
     imdb: float = Field(..., ge=0, le=100)
     votes: int = Field(..., ge=0)
-    meta_score = Optional[float] = Field(..., ge=0)
-    gross = Optional[float] = Field(..., ge=0)
+    meta_score: Optional[float] = Field(..., ge=0)
+    gross: Optional[float] = Field(..., ge=0)
     description: str
     price: float = Field(..., ge=0)
+    directors: DirectorSchema
+    genres: List[GenreSchema]
+    stars: List[StarSchema]
+    certification: CertificationSchema
 
     model_config = {
         "from_attributes": True,
@@ -99,15 +103,15 @@ class MovieCreateSchema(BaseModel):
 
 
 class MovieUpdateSchema(BaseModel):
-    name: str = Field(None, max_length=255)
-    year: int = None
-    time: int = Field(None, ge=0)
-    imdb: float = Field(None, ge=0, le=100)
-    votes: int = Field(None, ge=0)
-    meta_score = Optional[float] = Field(None, ge=0)
-    gross = Optional[float] = Field(None, ge=0)
-    description: str = None
-    price: float = Field(None, ge=0)
+    name: str | None = Field(None, max_length=255)
+    year: int | None = None
+    time: int | None = Field(None, ge=0)
+    imdb: float | None = Field(None, ge=0, le=100)
+    votes: int  | None  = Field(None, ge=0)
+    meta_score: float | None = Field(None, ge=0)
+    gross: float | None = Field(None, ge=0)
+    description: str | None = None
+    price: float | None = Field(None, ge=0)
 
     model_config = {
         "from_attributes": True,
