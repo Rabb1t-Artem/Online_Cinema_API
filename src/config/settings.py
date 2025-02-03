@@ -67,7 +67,7 @@ class TestingSettings(BaseAppSettings):
     SECRET_KEY_REFRESH: str = "TEST_SECRET_KEY_REFRESH"
     JWT_SIGNING_ALGORITHM: str = "HS256"
 
-    TEST_DATABASE_URL: str = "sqlite+aiosqlite:///test_database.db"
+    TEST_DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
 
     def model_post_init(self, __context: dict[str, Any] | None = None) -> None:
         object.__setattr__(self, "PATH_TO_DB", self.TEST_DATABASE_URL)

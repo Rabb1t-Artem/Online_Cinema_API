@@ -82,10 +82,10 @@ async def test_view_user_cart_admin(async_client: AsyncClient, create_test_user,
     user = await create_test_user()
     movie = await create_test_movie()
 
-    # Додаємо фільм у кошик
+    # Add movie to cart
     await async_client.post(f"/cart/{movie.id}/add", params={"user_id": user.id})
 
-    # Перевіряємо, що адміністратор може переглянути кошик користувача
+    # Ensure that admins can see all carts
     admin_response = await async_client.get(f"/cart/admin/{user.id}")
     assert admin_response.status_code == 200
     admin_data = admin_response.json()
