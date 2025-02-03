@@ -29,7 +29,6 @@ class MovieBaseSchema(CustomBaseModel):
     description: str
     price: float = Field(..., ge=0)
 
-
     @field_validator("year")
     def validate_year(cls, value):
         current_year = datetime.now().year
