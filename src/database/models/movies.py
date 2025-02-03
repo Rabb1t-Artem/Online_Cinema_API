@@ -156,7 +156,10 @@ class MovieModel(Base):
     )
     likes = relationship("MovieLikeModel", back_populates="movies", cascade="all, delete-orphan")
     ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
-
+    certification: Mapped["CertificationModel"] = relationship(
+        "CertificationModel",
+        back_populates="movies"
+    )
     __table_args__ = (UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),)
 
     @property
