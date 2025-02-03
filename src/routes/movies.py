@@ -190,7 +190,7 @@ async def create_movie(
             description=movie_data.description,
             price=movie_data.price,
             directors=movie_data.directors,
-            certification=certification,
+            certification_id=certification,
             genres=genres,
             stars=stars,
         )

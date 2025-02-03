@@ -42,7 +42,7 @@ class MovieDetailSchema(MovieBaseSchema):
     directors: DirectorSchema
     genres: List[GenreSchema]
     stars: List[StarSchema]
-    certification: CertificationSchema
+    certification_id: CertificationSchema
 
 
 class MovieListItemSchema(CustomBaseModel):
@@ -74,7 +74,7 @@ class MovieCreateSchema(CustomBaseModel):
     directors: DirectorSchema
     genres: List[GenreSchema]
     stars: List[StarSchema]
-    certification: CertificationSchema
+    certification_id: CertificationSchema
 
 
 class MovieUpdateSchema(CustomBaseModel):
