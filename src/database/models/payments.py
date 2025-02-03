@@ -28,7 +28,7 @@ class PaymentItemModel(Base):
     order_item_id: Mapped[int] = mapped_column(ForeignKey("order_items.id", ondelete="CASCADE"), nullable=False)
     price_at_payment: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    payment: Mapped["PaymentModel"] = relationship("PaymentModel", back_populates="items")
+    payment: Mapped["PaymentModel"] = relationship("PaymentModel", back_populates="payment_items")
     order_item: Mapped["OrderItemModel"] = relationship("OrderItemModel", back_populates="payment_items")
 
     def __repr__(self):
