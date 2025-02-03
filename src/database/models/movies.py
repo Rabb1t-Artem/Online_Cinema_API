@@ -69,18 +69,6 @@ MoviesDirectorsModel = Table(
 )
 
 
-MoviesCertificationsModel = Table(
-    "movies_certifications",
-    Base.metadata,
-    Column("movie_id", ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True),
-    Column(
-        "certification_id",
-        ForeignKey("certifications.id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-)
-
-
 class GenreModel(Base):
     __tablename__ = "genres"
 
@@ -131,8 +119,8 @@ class CertificationModel(Base):
 
     movies: Mapped[list["MovieModel"]] = relationship(
         "MovieModel",
-        secondary=MoviesCertificationsModel,
-        back_populates="certifications",
+        back_populates="certification",
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -155,10 +143,6 @@ class MovieModel(Base):
     price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
 
     certification_id: Mapped[int] = mapped_column(ForeignKey("certifications.id"), nullable=False)
-    certification: Mapped["CertificationModel"] = relationship(
-        "CertificationModel",
-        back_populates="movies",
-    )
     order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
     genres: Mapped[list["GenreModel"]] = relationship(

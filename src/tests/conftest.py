@@ -118,11 +118,14 @@ from database.session_test import get_test_db, reset_test_database, TestSessionL
 from database import get_db
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
 from database.populate import CSVDatabaseSeeder
-from main import app
 from security.token_manager import JWTAuthManager
 from storages import S3StorageClient
 from tests.doubles.fakes.storage import FakeS3Storage
 from tests.doubles.stubs.emails import StubEmailSender
+import pytest_asyncio
+from httpx import AsyncClient
+from httpx import ASGITransport
+from main import app
 
 
 # Event loop for async tests
@@ -147,10 +150,12 @@ def app_with_test_db():
     app.dependency_overrides.clear()
 
 
-# Asynchronous HTTP client for testing API
 @pytest_asyncio.fixture(scope="function")
-async def async_client(app_with_test_db) -> AsyncClient:
-    async with AsyncClient(app=app_with_test_db, base_url="http://test") as client:
+async def async_client(app_with_test_db):
+    """
+    Create an async client for testing FastAPI application.
+    """
+    async with AsyncClient(transport=ASGITransport(app=app_with_test_db), base_url="http://test") as client:
         yield client
 
 

@@ -17,8 +17,8 @@ class PaymentItem(BaseModel):
     order_item_id: int
     price_at_payment: Decimal
 
-    class Config:
-        orm_mode = True
+    # class Config:
+    #     orm_mode = True
 
 
 class Payment(BaseModel):
@@ -33,5 +33,5 @@ class Payment(BaseModel):
     client_secret: Optional[str]
     payment_items: List[PaymentItem]
 
-    class Config:
-        orm_mode = True
+    # class Config:
+    #     orm_mode = True

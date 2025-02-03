@@ -22,7 +22,6 @@ from database.models.accounts import (
     UserGroupModel,
 )
 from database.models.movies import (
-    MoviesCertificationsModel,
     MoviesDirectorsModel,
     StarsMoviesModel,
     CertificationModel,
@@ -284,7 +283,6 @@ class CSVDatabaseSeeder:
                 await self._db_session.execute(insert(MoviesGenresModel).values(movie_genres_data))
                 await self._db_session.execute(insert(StarsMoviesModel).values(movie_stars_data))
                 await self._db_session.execute(insert(MoviesDirectorsModel).values(movie_directors_data))
-                await self._db_session.execute(insert(MoviesCertificationsModel).values(movie_certifications_data))
                 await self._db_session.commit()
 
                 movie_likes_data = []
