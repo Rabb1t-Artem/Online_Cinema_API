@@ -10,10 +10,12 @@ TEST_DATABASE_URL = settings.PATH_TO_DB
 test_engine = create_async_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 TestSessionLocal = async_sessionmaker(bind=test_engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
+
 # session test DB
 async def get_test_db() -> AsyncSession:
     async with TestSessionLocal() as db:
         yield db
+
 
 # reset test DB
 async def reset_test_database():
