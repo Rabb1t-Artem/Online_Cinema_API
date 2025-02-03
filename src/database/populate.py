@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from random import choice, randint
+import string
 
 import pandas as pd
 from sqlalchemy import insert, select
@@ -9,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from tqdm import tqdm
 
 from config import get_settings
+from database import get_db
 from database.models.accounts import (
     ActivationTokenModel,
     PasswordResetTokenModel,
@@ -38,6 +40,12 @@ from database.models.movies import (
 )
 from database.models.orders import OrderItemModel, OrderModel
 from database.models.payments import PaymentStatus, PaymentModel, PaymentItemModel
+
+
+def generate_random_string(length):
+    characters = string.ascii_letters + string.digits
+    random_string = ''.join(choice(characters) for _ in range(length))
+    return random_string
 
 
 class CSVDatabaseSeeder:
@@ -197,7 +205,7 @@ class CSVDatabaseSeeder:
 
                 # Обробка інших даних (країни, жанри, актори, режисери тощо)
                 data = self._preprocess_csv()
-                countries = data["country"].unique()
+                countries = data["country"].unique() # noqa
                 genres = set(
                     genre.strip() for genres in data["genre"].dropna() for genre in genres.split(",") if genre.strip()
                 )
@@ -403,7 +411,7 @@ class CSVDatabaseSeeder:
 
 async def main():
     settings = get_settings()
-    async with get_async_db_session() as db_session:
+    async with get_db() as db_session:
         seeder = CSVDatabaseSeeder(settings.PATH_TO_MOVIES_CSV, db_session)
 
         if not await seeder.is_db_populated():
