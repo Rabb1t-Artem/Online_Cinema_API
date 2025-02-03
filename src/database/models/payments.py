@@ -30,8 +30,8 @@ class PaymentItemModel(Base):
     order_item_id: Mapped[int] = mapped_column(ForeignKey("order_items.id", ondelete="CASCADE"), nullable=False)
     price_at_payment: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    payment: Mapped["PaymentModel"] = relationship("PaymentModel", back_populates="payment_items")
-    order_item: Mapped["OrderItemModel"] = relationship("OrderItemModel", back_populates="payment_items")
+    payment = relationship("PaymentModel", back_populates="payment_items")
+    order_item = relationship("OrderItemModel", back_populates="payment_items")
 
     def __repr__(self):
         return (
@@ -55,9 +55,9 @@ class PaymentModel(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     external_payment_id: Mapped[str] = mapped_column(String(255), nullable=True)
 
-    order: Mapped["OrderModel"] = relationship("OrderModel", back_populates="payments")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="payments")
-    payment_items: Mapped[List["PaymentItemModel"]] = relationship("PaymentItemModel", back_populates="payment")
+    order = relationship("OrderModel", back_populates="payments")
+    user = relationship("UserModel", back_populates="payments")
+    payment_items = relationship("PaymentItemModel", back_populates="payment")
 
     def __repr__(self):
         return f"<PaymentModel(id={self.id}, order_id={self.order_id}, amount={self.amount}, status={self.status})>"

@@ -77,7 +77,7 @@ class GenreModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
+    movies = relationship(
         "MovieModel", secondary=MoviesGenresModel, back_populates="genres"
     )
 
@@ -91,7 +91,7 @@ class StarModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship("MovieModel", secondary=StarsMoviesModel, back_populates="stars")
+    movies = relationship("MovieModel", secondary=StarsMoviesModel, back_populates="stars")
 
     def __repr__(self):
         return f"<Star(name='{self.name}')>"
@@ -103,7 +103,7 @@ class DirectorModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
+    movies = relationship(
         "MovieModel",
         secondary=MoviesDirectorsModel,
         back_populates="directors",
@@ -119,7 +119,7 @@ class CertificationModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
+    movies = relationship(
         "MovieModel", back_populates="certification", cascade="all, delete-orphan"
     )
 
@@ -143,21 +143,21 @@ class MovieModel(Base):
     price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
 
     certification_id: Mapped[int] = mapped_column(ForeignKey("certifications.id"), nullable=False)
-    order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
+    order_items = relationship("OrderItemModel", back_populates="movie")
 
-    genres: Mapped[list["GenreModel"]] = relationship(
+    genres = relationship(
         "GenreModel", secondary=MoviesGenresModel, back_populates="movies"
     )
 
-    stars: Mapped[list["StarModel"]] = relationship("StarModel", secondary=StarsMoviesModel, back_populates="movies")
+    stars = relationship("StarModel", secondary=StarsMoviesModel, back_populates="movies")
 
-    directors: Mapped[list["DirectorModel"]] = relationship(
+    directors = relationship(
         "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
     likes = relationship("MovieLikeModel", back_populates="movie", cascade="all, delete-orphan")
     comments = relationship("MovieCommentModel", back_populates="movie", cascade="all, delete-orphan")
-    ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
-    certification: Mapped["CertificationModel"] = relationship("CertificationModel", back_populates="movies")
+    ratings = relationship("MovieRatingModel", back_populates="movie")
+    certification = relationship("CertificationModel", back_populates="movies")
     favorites = relationship("FavoriteMovieModel", back_populates="movie", cascade="all, delete-orphan")
     ratings = relationship("MovieRatingModel", back_populates="movie", cascade="all, delete-orphan")
 
@@ -185,8 +185,8 @@ class MovieLikeModel(Base):
     movie_id: Mapped[int] = mapped_column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
     is_liked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="likes")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="movie_likes")
+    movie = relationship("MovieModel", back_populates="likes")
+    user = relationship("UserModel", back_populates="movie_likes")
 
     __table_args__ = (UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),)
 
@@ -200,10 +200,10 @@ class MovieCommentModel(Base):
     content: Mapped[str] = mapped_column(String(500), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
 
-    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="comments")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="comments")
+    movie = relationship("MovieModel", back_populates="comments")
+    user = relationship("UserModel", back_populates="comments")
 
-    likes: Mapped[List["CommentLikeModel"]] = relationship(
+    likes = relationship(
         "CommentLikeModel", back_populates="comment", cascade="all, delete-orphan"
     )
 
@@ -215,8 +215,8 @@ class FavoriteMovieModel(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
 
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="favorites")
-    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="favorites")
+    user = relationship("UserModel", back_populates="favorites")
+    movie = relationship("MovieModel", back_populates="favorites")
 
     def __repr__(self):
         return f"<FavoriteMovie(user_id={self.user_id}, movie_id={self.movie_id})>"
@@ -230,8 +230,8 @@ class MovieRatingModel(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     rating: Mapped[float] = mapped_column(Float, nullable=False)
 
-    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="ratings")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="ratings")
+    movie = relationship("MovieModel", back_populates="ratings")
+    user = relationship("UserModel", back_populates="ratings")
 
     __table_args__ = (UniqueConstraint("movie_id", "user_id", name="unique_movie_user_rating_constraint"),)
 
@@ -245,7 +245,7 @@ class NotificationModel(Base):
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="notifications")
+    user = relationship("UserModel", back_populates="notifications")
 
     def __repr__(self):
         return f"<Notification(user_id={self.user_id}, message='{self.message}', is_read={self.is_read})>"
@@ -261,8 +261,8 @@ class CommentLikeModel(Base):
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="comment_likes")
-    comment: Mapped["MovieCommentModel"] = relationship("MovieCommentModel", back_populates="likes")
+    user = relationship("UserModel", back_populates="comment_likes")
+    comment = relationship("MovieCommentModel", back_populates="likes")
 
     __table_args__ = (UniqueConstraint("user_id", "comment_id", name="unique_user_comment_like"),)
 

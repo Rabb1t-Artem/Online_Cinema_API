@@ -24,9 +24,9 @@ class OrderModel(Base):
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     total_amount: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), nullable=False)
 
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="orders")
-    items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="order")
-    payments: Mapped[List["PaymentModel"]] = relationship(
+    user = relationship("UserModel", back_populates="orders")
+    items = relationship("OrderItemModel", back_populates="order")
+    payments = relationship(
         "PaymentModel", back_populates="order", cascade="all, delete-orphan"
     )
 
@@ -47,9 +47,9 @@ class OrderItemModel(Base):
     movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
     price_at_order: Mapped[Decimal] = mapped_column(DECIMAL(10, 2), nullable=False)
 
-    order: Mapped["OrderModel"] = relationship("OrderModel", back_populates="items")
-    movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="order_items")
-    payment_items: Mapped[List["PaymentItemModel"]] = relationship("PaymentItemModel", back_populates="order_item")
+    order = relationship("OrderModel", back_populates="items")
+    movie = relationship("MovieModel", back_populates="order_items")
+    payment_items = relationship("PaymentItemModel", back_populates="order_item")
 
     def __repr__(self):
         return (

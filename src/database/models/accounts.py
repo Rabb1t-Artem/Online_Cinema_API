@@ -51,7 +51,7 @@ class UserGroupModel(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[UserGroupEnum] = mapped_column(Enum(UserGroupEnum), nullable=False, unique=True)
 
-    users: Mapped[List["UserModel"]] = relationship("UserModel", back_populates="group")
+    users = relationship("UserModel", back_populates="group")
 
     def __repr__(self):
         return f"<UserGroupModel(id={self.id}, name={self.name})>"
@@ -73,38 +73,38 @@ class UserModel(Base):
     )
 
     group_id: Mapped[int] = mapped_column(ForeignKey("user_groups.id", ondelete="CASCADE"), nullable=False)
-    group: Mapped["UserGroupModel"] = relationship("UserGroupModel", back_populates="users")
-    orders: Mapped[List["OrderModel"]] = relationship("OrderModel", back_populates="user")
-    payments: Mapped[List["PaymentModel"]] = relationship(
+    group = relationship("UserGroupModel", back_populates="users")
+    orders = relationship("OrderModel", back_populates="user")
+    payments = relationship(
         "PaymentModel", back_populates="user", cascade="all, delete-orphan"
     )
 
-    cart: Mapped["CartModel"] = relationship("CartModel", back_populates="user", uselist=False)
+    cart = relationship("CartModel", back_populates="user", uselist=False)
 
-    activation_token: Mapped[Optional["ActivationTokenModel"]] = relationship(
+    activation_token = relationship(
         "ActivationTokenModel", back_populates="user", cascade="all, delete-orphan"
     )
 
-    password_reset_token: Mapped[Optional["PasswordResetTokenModel"]] = relationship(
+    password_reset_token = relationship(
         "PasswordResetTokenModel", back_populates="user", cascade="all, delete-orphan"
     )
 
-    refresh_tokens: Mapped[List["RefreshTokenModel"]] = relationship(
+    refresh_tokens = relationship(
         "RefreshTokenModel", back_populates="user", cascade="all, delete-orphan"
     )
 
-    profile: Mapped[Optional["UserProfileModel"]] = relationship(
+    profile = relationship(
         "UserProfileModel", back_populates="user", cascade="all, delete-orphan"
     )
 
-    movie_likes: Mapped[List["MovieLikeModel"]] = relationship(
+    movie_likes = relationship(
         "MovieLikeModel", back_populates="user", cascade="all, delete-orphan"
     )
 
-    notifications: Mapped[List["NotificationModel"]] = relationship(
+    notifications = relationship(
         "NotificationModel", back_populates="user", cascade="all, delete-orphan"
     )
-    comment_likes: Mapped[List["CommentLikeModel"]] = relationship(
+    comment_likes = relationship(
         "CommentLikeModel", back_populates="user", cascade="all, delete-orphan"
     )
     favorites = relationship("FavoriteMovieModel", back_populates="user", cascade="all, delete-orphan")
