@@ -2,10 +2,10 @@ import datetime
 from typing import Any, Optional
 
 from fastapi import File, Form, UploadFile
-from pydantic import BaseModel
+from schemas.custom_base_model import CustomBaseModel
 
 
-class ProfileRequestForm(BaseModel):
+class ProfileRequestForm(CustomBaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
     gender: Optional[str]
@@ -32,12 +32,8 @@ class ProfileRequestForm(BaseModel):
             avatar=avatar,
         )
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
 
-
-class ProfileResponseSchema(BaseModel):
+class ProfileResponseSchema(CustomBaseModel):
     id: int
     user_id: int
     first_name: Optional[str]
@@ -46,7 +42,3 @@ class ProfileResponseSchema(BaseModel):
     date_of_birth: Optional[datetime.date]
     info: Optional[str]
     avatar: Optional[str]
-
-    class Config:
-        orm_mode = True
-        from_attributes = True

@@ -1,58 +1,36 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict
 from typing import List, Optional
 
+from schemas.custom_base_model import CustomBaseModel
 
-class GenreSchema(BaseModel):
+
+class GenreSchema(CustomBaseModel):
     id: int
     name: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class GenreCreateSchema(BaseModel):
+class GenreCreateSchema(CustomBaseModel):
     name: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class GenreUpdateSchema(BaseModel):
+class GenreUpdateSchema(CustomBaseModel):
     name: Optional[str] = None
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class GenreListResponseSchema(BaseModel):
+class GenreListResponseSchema(CustomBaseModel):
     genres: List[GenreSchema]
     prev_page: Optional[str]
     next_page: Optional[str]
     total_pages: int
     total_items: int
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class GenreDetailSchema(BaseModel):
+class GenreDetailSchema(CustomBaseModel):
     id: int
     name: str
     movie_count: int
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class GenreCountSchema(BaseModel):
+class GenreCountSchema(CustomBaseModel):
     genre_name: str
     movie_count: int
-
-    model_config = {
-        "from_attributes": True,
-    }

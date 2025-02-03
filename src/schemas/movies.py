@@ -1,31 +1,24 @@
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 
 from schemas.genres import GenreSchema
 from schemas.stars import StarSchema
+from schemas.custom_base_model import CustomBaseModel
 
 
-class DirectorSchema(BaseModel):
+class DirectorSchema(CustomBaseModel):
     id: int
     name: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class CertificationSchema(BaseModel):
+class CertificationSchema(CustomBaseModel):
     id: int
     name: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieBaseSchema(BaseModel):
+class MovieBaseSchema(CustomBaseModel):
     name: str = Field(..., max_length=255)
     year: int
     time: int = Field(..., ge=0)
@@ -36,7 +29,6 @@ class MovieBaseSchema(BaseModel):
     description: str
     price: float = Field(..., ge=0)
 
-    model_config = {"from_attributes": True}
 
     @field_validator("year")
     def validate_year(cls, value):
@@ -53,36 +45,24 @@ class MovieDetailSchema(MovieBaseSchema):
     stars: List[StarSchema]
     certification: CertificationSchema
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieListItemSchema(BaseModel):
+class MovieListItemSchema(CustomBaseModel):
     id: int
     name: str = Field(..., max_length=255)
     year: int
     time: int = Field(..., ge=0)
     imdb: float = Field(..., ge=0, le=100)
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieListResponseSchema(BaseModel):
+class MovieListResponseSchema(CustomBaseModel):
     movies: List[MovieListItemSchema]
     prev_page: Optional[str]
     next_page: Optional[str]
     total_pages: int
     total_items: int
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieCreateSchema(BaseModel):
+class MovieCreateSchema(CustomBaseModel):
     name: str = Field(..., max_length=255)
     year: int
     time: int = Field(..., ge=0)
@@ -97,12 +77,8 @@ class MovieCreateSchema(BaseModel):
     stars: List[StarSchema]
     certification: CertificationSchema
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieUpdateSchema(BaseModel):
+class MovieUpdateSchema(CustomBaseModel):
     name: str | None = Field(None, max_length=255)
     year: int | None = None
     time: int | None = Field(None, ge=0)
@@ -113,26 +89,14 @@ class MovieUpdateSchema(BaseModel):
     description: str | None = None
     price: float | None = Field(None, ge=0)
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieLikeSchema(BaseModel):
+class MovieLikeSchema(CustomBaseModel):
     movie_id: int
     is_liked: bool = False
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class MovieCommentCreateSchema(BaseModel):
+class MovieCommentCreateSchema(CustomBaseModel):
     content: str
-
-    model_config = {
-        "from_attributes": True,
-    }
 
 
 class MovieCommentSchema(MovieCommentCreateSchema):
@@ -140,43 +104,23 @@ class MovieCommentSchema(MovieCommentCreateSchema):
     user_id: int
     created_at: datetime
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class FavoriteMovieSchema(BaseModel):
+class FavoriteMovieSchema(CustomBaseModel):
     user_id: int
     movie_id: int
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class FavoriteMovieResponseSchema(BaseModel):
+class FavoriteMovieResponseSchema(CustomBaseModel):
     message: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class FavoriteMovieListSchema(BaseModel):
+class FavoriteMovieListSchema(CustomBaseModel):
     movies: List[MovieDetailSchema]
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class NotificationSchema(BaseModel):
+class NotificationSchema(CustomBaseModel):
     id: int
     user_id: int
     message: str
     is_read: bool
     created_at: datetime
-
-    model_config = {
-        "from_attributes": True,
-    }
