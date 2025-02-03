@@ -20,9 +20,7 @@ async def delete_expired_tokens():
     """
     async with get_db() as session:
         result = await session.execute(
-            select(ActivationTokenModel).where(
-                ActivationTokenModel.expires_at < datetime.now(timezone.utc)
-            )
+            select(ActivationTokenModel).where(ActivationTokenModel.expires_at < datetime.now(timezone.utc))
         )
         expired_tokens = result.scalars().all()
 
