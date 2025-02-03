@@ -118,9 +118,7 @@ class CertificationModel(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel",
-        back_populates="certification",
-        cascade="all, delete-orphan"
+        "MovieModel", back_populates="certification", cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -154,12 +152,13 @@ class MovieModel(Base):
     directors: Mapped[list["DirectorModel"]] = relationship(
         "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
-    likes = relationship("MovieLikeModel", back_populates="movies", cascade="all, delete-orphan")
+    likes = relationship("MovieLikeModel", back_populates="movie", cascade="all, delete-orphan")
+    comments = relationship("MovieCommentModel", back_populates="movie", cascade="all, delete-orphan")
     ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
-    certification: Mapped["CertificationModel"] = relationship(
-        "CertificationModel",
-        back_populates="movies"
-    )
+    certification: Mapped["CertificationModel"] = relationship("CertificationModel", back_populates="movies")
+    favorites = relationship("FavoriteMovieModel", back_populates="movie", cascade="all, delete-orphan")
+    ratings = relationship("MovieRatingModel", back_populates="movie", cascade="all, delete-orphan")
+
     __table_args__ = (UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),)
 
     @property
@@ -185,7 +184,7 @@ class MovieLikeModel(Base):
     is_liked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="likes")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="likes")
+    user: Mapped["UserModel"] = relationship("UserModel", back_populates="movie_likes")
 
     __table_args__ = (UniqueConstraint("user_id", "movie_id", name="unique_user_movie_like"),)
 

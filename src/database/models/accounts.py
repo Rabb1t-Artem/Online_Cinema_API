@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from database.models.carts import CartModel
-    from database.models.movies import NotificationModel, CommentLikeModel, MovieLikeModel
+    from database.models.movies import NotificationModel, CommentLikeModel, MovieLikeModel, FavoriteMovieModel
     from database.models.orders import OrderModel
     from database.models.payments import PaymentModel
 from database.validators import accounts as validators
@@ -103,6 +103,11 @@ class UserModel(Base):
     comment_likes: Mapped[List["CommentLikeModel"]] = relationship(
         "CommentLikeModel", back_populates="user", cascade="all, delete-orphan"
     )
+    favorites = relationship("FavoriteMovieModel", back_populates="user", cascade="all, delete-orphan")
+
+    ratings = relationship("MovieRatingModel", back_populates="user", cascade="all, delete-orphan")
+
+    comments = relationship("MovieCommentModel", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<UserModel(id={self.id}, email={self.email}, is_active={self.is_active})>"
