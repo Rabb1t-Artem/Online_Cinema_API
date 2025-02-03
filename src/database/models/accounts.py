@@ -16,7 +16,7 @@ from sqlalchemy import (
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
-from database import Base
+from .base import Base
 
 from typing import TYPE_CHECKING
 
@@ -25,6 +25,10 @@ if TYPE_CHECKING:
     from database.models.movies import NotificationModel, CommentLikeModel, MovieLikeModel, FavoriteMovieModel
     from database.models.orders import OrderModel
     from database.models.payments import PaymentModel
+# from . import CartModel
+# from . import NotificationModel, CommentLikeModel, MovieLikeModel, FavoriteMovieModel
+# from . import OrderModel
+# from . import PaymentModel
 from database.validators import accounts as validators
 from security.passwords import hash_password, verify_password
 from security.utils import generate_secure_token

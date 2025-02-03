@@ -6,12 +6,14 @@ import enum
 from sqlalchemy import Integer, ForeignKey, DateTime, Numeric, Enum, String, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from database import Base
+from .base import Base
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from database.models.orders import OrderModel, OrderItemModel
     from database.models.accounts import UserModel
+# from . import OrderModel, OrderItemModel
+# from . import UserModel
 
 
 class PaymentStatus(enum.Enum):
