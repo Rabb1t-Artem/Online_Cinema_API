@@ -154,7 +154,7 @@ class MovieModel(Base):
     directors: Mapped[list["DirectorModel"]] = relationship(
         "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
-    likes = relationship("MovieLikeModel", back_populates="movies", cascade="all, delete-orphan")
+    likes = relationship("MovieLikeModel", back_populates="movie", cascade="all, delete-orphan")
     ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
     certification: Mapped["CertificationModel"] = relationship(
         "CertificationModel",
