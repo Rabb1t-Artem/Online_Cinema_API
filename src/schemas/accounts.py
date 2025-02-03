@@ -1,13 +1,12 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import EmailStr, field_validator
+from schemas.custom_base_model import CustomBaseModel
 
 from database import accounts_validators
 
 
-class BaseEmailPasswordSchema(BaseModel):
+class BaseEmailPasswordSchema(CustomBaseModel):
     email: EmailStr
     password: str
-
-    model_config = {"from_attributes": True}
 
     @field_validator("email")
     @classmethod
@@ -20,7 +19,7 @@ class BaseEmailPasswordSchema(BaseModel):
         return accounts_validators.validate_password_strength(value)
 
 
-class ChangePasswordRequestSchema(BaseModel):
+class ChangePasswordRequestSchema(CustomBaseModel):
     email: str
     old_password: str
     new_password: str
@@ -30,7 +29,7 @@ class UserRegistrationRequestSchema(BaseEmailPasswordSchema):
     pass
 
 
-class PasswordResetRequestSchema(BaseModel):
+class PasswordResetRequestSchema(CustomBaseModel):
     email: EmailStr
 
 
@@ -42,32 +41,32 @@ class UserLoginRequestSchema(BaseEmailPasswordSchema):
     pass
 
 
-class UserLoginResponseSchema(BaseModel):
+class UserLoginResponseSchema(CustomBaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
 
-class UserRegistrationResponseSchema(BaseModel):
+class UserRegistrationResponseSchema(CustomBaseModel):
     id: int
     email: EmailStr
 
     model_config = {"from_attributes": True}
 
 
-class UserActivationRequestSchema(BaseModel):
+class UserActivationRequestSchema(CustomBaseModel):
     email: EmailStr
     token: str
 
 
-class MessageResponseSchema(BaseModel):
+class MessageResponseSchema(CustomBaseModel):
     message: str
 
 
-class TokenRefreshRequestSchema(BaseModel):
+class TokenRefreshRequestSchema(CustomBaseModel):
     refresh_token: str
 
 
-class TokenRefreshResponseSchema(BaseModel):
+class TokenRefreshResponseSchema(CustomBaseModel):
     access_token: str
     token_type: str = "bearer"

@@ -1,48 +1,30 @@
-from pydantic import BaseModel
+from pydantic import ConfigDict
 from typing import List, Optional
 
+from schemas.custom_base_model import CustomBaseModel
 
-class StarSchema(BaseModel):
+
+class StarSchema(CustomBaseModel):
     id: int
     name: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class StarCreateSchema(BaseModel):
+class StarCreateSchema(CustomBaseModel):
     name: str
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class StarUpdateSchema(BaseModel):
+class StarUpdateSchema(CustomBaseModel):
     name: Optional[str] = None
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class StarListResponseSchema(BaseModel):
+class StarListResponseSchema(CustomBaseModel):
     stars: List[StarSchema]
     prev_page: Optional[str]
     next_page: Optional[str]
     total_pages: int
     total_items: int
 
-    model_config = {
-        "from_attributes": True,
-    }
 
-
-class StarDetailSchema(BaseModel):
+class StarDetailSchema(CustomBaseModel):
     id: int
     name: str
-
-    model_config = {
-        "from_attributes": True,
-    }

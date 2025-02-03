@@ -12,16 +12,14 @@ from notifications import EmailSenderInterface, EmailSender
 from security.interfaces import JWTAuthManagerInterface
 from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
-from database.models.accounts import UserModel
-
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
 
-def get_db():
-    from database.session_sqlite import get_sqlite_db
+# def get_db():
+#     from database.session_sqlite import get_sqlite_db
 
-    return get_sqlite_db()
+#     return get_sqlite_db()
 
 
 def get_settings() -> BaseAppSettings:
@@ -69,8 +67,9 @@ def get_s3_storage_client(
     )
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()) -> UserModel | None:
+async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()):
     from database import get_db
+    from database.models.accounts import UserModel
 
     db: AsyncSession = await asyncio.anext(get_db())
     try:

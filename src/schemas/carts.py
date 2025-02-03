@@ -1,12 +1,12 @@
 from datetime import date, datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+from pydantic import Field, ConfigDict, model_validator
+
+from schemas.custom_base_model import CustomBaseModel
 
 
-class MovieInCartSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class MovieInCartSchema(CustomBaseModel):
     id: int
     name: str
     genres: List[str]
@@ -22,30 +22,22 @@ class MovieInCartSchema(BaseModel):
         return self
 
 
-class CartItemBaseSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class CartItemBaseSchema(CustomBaseModel):
     movie_id: int = Field(..., description="Movie ID")
 
 
-class CartItemResponseSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class CartItemResponseSchema(CustomBaseModel):
     id: int
     cart_id: int
     added_at: datetime
     movie: MovieInCartSchema
 
 
-class CartCreateSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class CartCreateSchema(CustomBaseModel):
     user_id: int = Field(..., description="USER ID")
 
 
-class CartResponseSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class CartResponseSchema(CustomBaseModel):
     id: int
     user_id: int
     cart_items: List[CartItemResponseSchema]
