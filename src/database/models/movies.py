@@ -118,9 +118,7 @@ class CertificationModel(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel",
-        back_populates="certification",
-        cascade="all, delete-orphan"
+        "MovieModel", back_populates="certification", cascade="all, delete-orphan"
     )
 
     def __repr__(self):
@@ -157,10 +155,7 @@ class MovieModel(Base):
     likes = relationship("MovieLikeModel", back_populates="movie", cascade="all, delete-orphan")
     comments = relationship("MovieCommentModel", back_populates="movie", cascade="all, delete-orphan")
     ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
-    certification: Mapped["CertificationModel"] = relationship(
-        "CertificationModel",
-        back_populates="movies"
-    )
+    certification: Mapped["CertificationModel"] = relationship("CertificationModel", back_populates="movies")
     favorites = relationship("FavoriteMovieModel", back_populates="movie", cascade="all, delete-orphan")
     ratings = relationship("MovieRatingModel", back_populates="movie", cascade="all, delete-orphan")
 

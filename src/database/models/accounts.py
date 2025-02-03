@@ -104,9 +104,9 @@ class UserModel(Base):
         "CommentLikeModel", back_populates="user", cascade="all, delete-orphan"
     )
     favorites = relationship("FavoriteMovieModel", back_populates="user", cascade="all, delete-orphan")
-    
+
     ratings = relationship("MovieRatingModel", back_populates="user", cascade="all, delete-orphan")
-    
+
     comments = relationship("MovieCommentModel", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
