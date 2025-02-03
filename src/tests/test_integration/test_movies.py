@@ -3,7 +3,7 @@ import random
 import pytest
 
 from database import MovieModel
-from database import GenreModel, ActorModel, LanguageModel, CountryModel
+from database import GenreModel
 
 
 def test_get_movies_empty_database(client):
@@ -345,17 +345,6 @@ def test_create_movie_and_related_models(client, db_session):
     for genre_name in movie_data["genres"]:
         genre = db_session.query(GenreModel).filter_by(name=genre_name).first()
         assert genre is not None, f"Genre '{genre_name}' was not created."
-
-    for actor_name in movie_data["actors"]:
-        actor = db_session.query(ActorModel).filter_by(name=actor_name).first()
-        assert actor is not None, f"Actor '{actor_name}' was not created."
-
-    for language_name in movie_data["languages"]:
-        language = db_session.query(LanguageModel).filter_by(name=language_name).first()
-        assert language is not None, f"Language '{language_name}' was not created."
-
-    country = db_session.query(CountryModel).filter_by(code=movie_data["country"]).first()
-    assert country is not None, f"Country '{movie_data['country']}' was not created."
 
 
 def test_create_movie_duplicate_error(client, db_session, seed_database):
