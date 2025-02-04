@@ -105,10 +105,10 @@ async def create_genre(genre_data: GenreCreateSchema, db: AsyncSession = Depends
     existing_genre = result.scalars().first()
 
     if existing_genre:
-            raise HTTPException(
-                status_code=409,
-                detail=f"A genre with the name '{genre_data.name}' already exists.",
-            )
+        raise HTTPException(
+            status_code=409,
+            detail=f"A genre with the name '{genre_data.name}' already exists.",
+        )
 
     genre = GenreModel(name=genre_data.name)
     db.add(genre)
