@@ -39,10 +39,10 @@ class MovieBaseSchema(CustomBaseModel):
 
 class MovieDetailSchema(MovieBaseSchema):
     id: int
-    directors: DirectorSchema
+    directors: List[DirectorSchema]
     genres: List[GenreSchema]
     stars: List[StarSchema]
-    certification_id: CertificationSchema
+    certification: CertificationSchema
 
 
 class MovieListItemSchema(CustomBaseModel):
@@ -71,7 +71,7 @@ class MovieCreateSchema(CustomBaseModel):
     gross: Optional[float] = Field(..., ge=0)
     description: str
     price: float = Field(..., ge=0)
-    directors: DirectorSchema
+    directors: List[DirectorSchema]
     genres: List[GenreSchema]
     stars: List[StarSchema]
     certification_id: CertificationSchema

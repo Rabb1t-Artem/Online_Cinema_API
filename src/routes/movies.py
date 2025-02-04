@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from starlette import status
 
 from database import get_db
@@ -139,23 +139,25 @@ async def create_movie(
         )
 
     try:
-        result_director = await db.execute(
-            select(DirectorModel).filter(DirectorModel.name == movie_data.directors.name)
-        )
-        director = result_director.scalar_one_or_none()
-
-        if not director:
-            director = DirectorModel(name=movie_data.directors.name)
-            db.add(director)
-            await db.flush()
+        directors = []
+        for director_item in movie_data.directors:
+            result_director = await db.execute(
+                select(DirectorModel).filter(DirectorModel.name == director_item.name)
+            )
+            director = result_director.scalar_one_or_none()
+            if not director:
+                director = DirectorModel(name=director_item.name)
+                db.add(director)
+                await db.flush()
+            directors.append(director)
 
         result_certification = await db.execute(
-            select(CertificationModel).filter(CertificationModel.name == movie_data.certification.name)
+            select(CertificationModel).filter(CertificationModel.name == movie_data.certification_id.name)
         )
         certification = result_certification.scalars().first()
 
         if not certification:
-            certification = CertificationModel(name=movie_data.certification.name)
+            certification = CertificationModel(name=movie_data.certification_id.name)
             db.add(certification)
             await db.flush()
 
@@ -170,11 +172,11 @@ async def create_movie(
             genres.append(genre)
 
         stars = []
-        for star_name in movie_data.stars:
-            result_stars = await db.execute(select(StarModel).filter(StarModel.name == star_name))
+        for star_item in movie_data.stars:
+            result_stars = await db.execute(select(StarModel).filter(StarModel.name == star_item.name))
             star = result_stars.scalars().first()
             if not star:
-                star = StarModel(name=star_name.name)
+                star = StarModel(name=star_item.name)
                 db.add(star)
                 await db.flush()
             stars.append(star)
@@ -189,14 +191,26 @@ async def create_movie(
             gross=movie_data.gross,
             description=movie_data.description,
             price=movie_data.price,
-            directors=movie_data.directors,
-            certification_id=certification,
+            directors=directors,
+            certification_id=certification.id,
             genres=genres,
             stars=stars,
         )
         db.add(movie)
         await db.commit()
         await db.refresh(movie)
+
+        result = await db.execute(
+            select(MovieModel)
+            .options(
+                selectinload(MovieModel.directors),
+                selectinload(MovieModel.genres),
+                selectinload(MovieModel.stars),
+                selectinload(MovieModel.certification)
+            )
+            .filter(MovieModel.id == movie.id)
+        )
+        movie = result.scalars().first()
 
         return MovieDetailSchema.model_validate(movie)
     except IntegrityError:
