@@ -12,8 +12,9 @@ from notifications import EmailSenderInterface, EmailSender
 from security.interfaces import JWTAuthManagerInterface
 from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
+from security.http import get_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
 
 
 # def get_db():
@@ -67,7 +68,7 @@ def get_s3_storage_client(
     )
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), settings: Settings = Depends()):
+async def get_current_user(token: str = Depends(get_token), settings: Settings = Depends()):
     from database import get_db
     from database.models.accounts import UserModel
 

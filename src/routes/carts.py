@@ -4,6 +4,9 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy import delete
 from datetime import datetime, timezone
+from security.http import get_token
+from security.interfaces import JWTAuthManagerInterface
+from config import get_jwt_auth_manager
 
 from database.models.orders import OrderItemModel, OrderModel
 from database import get_db
@@ -34,8 +37,14 @@ async def get_cart_by_user(user_id: int, db: AsyncSession) -> CartModel:
 
 
 @cart_router.get("/", response_model=CartResponseSchema)
-async def view_cart(user_id: int, db: AsyncSession = Depends(get_db)) -> CartResponseSchema:
+async def view_cart(
+    token: str = Depends(get_token),
+    db: AsyncSession = Depends(get_db),
+    jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
+) -> CartResponseSchema:
     """Get the contents of the user's cart."""
+    user_data = jwt_manager.decode_access_token(token)
+    user_id = user_data.get("user_id")
     cart = await get_cart_by_user(user_id, db)
 
     if not cart.cart_items:
