@@ -109,11 +109,10 @@
 
 import asyncio
 import pytest
-import pytest_asyncio
-from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
-from config import get_settings
+
+from config.dependencies import get_settings
 from database.session_test import get_test_db, reset_test_database, TestSessionLocal
 from database import get_db
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
@@ -126,6 +125,12 @@ import pytest_asyncio
 from httpx import AsyncClient
 from httpx import ASGITransport
 from main import app
+import pytest
+
+pytest_plugins = "pytest_asyncio"
+
+def pytest_configure():
+    pytest.asyncio_mode = "auto"
 
 
 # Event loop for async tests
