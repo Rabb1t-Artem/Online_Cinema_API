@@ -1,3 +1,5 @@
+import os
+
 from decimal import Decimal
 from typing import List, Optional
 
@@ -7,28 +9,31 @@ from sqlalchemy.future import select
 
 import stripe
 
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+# from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+
 from schemas.payments import Payment, PaymentItem
 from database.models.accounts import UserModel
 from database.models.orders import OrderModel
 from database.models.payments import PaymentModel, PaymentStatus
-from config.dependencies import get_db, get_current_user
-from config import settings
+from config.dependencies import get_current_user
+from database import get_db
+from config import settings as settings
 
 router = APIRouter()
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+# stripe.api_key = settings.BaseAppSettings.STRIPE_SECRET_KEY
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
-conf = ConnectionConfig(
-    MAIL_USERNAME=settings.BaseAppSettings.EMAIL_HOST_USER,
-    MAIL_PASSWORD=settings.BaseAppSettings.EMAIL_HOST_PASSWORD,
-    MAIL_FROM=settings.BaseAppSettings.EMAIL_HOST_USER,
-    MAIL_PORT=settings.BaseAppSettings.EMAIL_PORT,
-    MAIL_SERVER=settings.BaseAppSettings.EMAIL_HOST,
-    MAIL_TLS=settings.BaseAppSettings.EMAIL_USE_TLS,
-    MAIL_SSL=False,
-    USE_CREDENTIALS=True,
-)
+# conf = ConnectionConfig(
+#     MAIL_USERNAME=settings.BaseAppSettings.EMAIL_HOST_USER,
+#     MAIL_PASSWORD=settings.BaseAppSettings.EMAIL_HOST_PASSWORD,
+#     MAIL_FROM=settings.BaseAppSettings.EMAIL_HOST_USER,
+#     MAIL_PORT=settings.BaseAppSettings.EMAIL_PORT,
+#     MAIL_SERVER=settings.BaseAppSettings.EMAIL_HOST,
+#     MAIL_TLS=settings.BaseAppSettings.EMAIL_USE_TLS,
+#     MAIL_SSL=False,
+#     USE_CREDENTIALS=True,
+# )
 
 
 async def create_stripe_payment_intent(amount: Decimal):
@@ -48,52 +53,52 @@ async def create_stripe_payment_intent(amount: Decimal):
         raise HTTPException(status_code=500, detail=f"Stripe error: {str(e)}")
 
 
-async def send_payment_email(user_email: str, amount: float):
-    """
-    Sends a payment confirmation email to the user.
-    :param user_email: The email address of the recipient.
-    :param amount: The payment amount.
-    """
-    message = MessageSchema(
-        subject="Payment Confirmation",
-        recipients=[user_email],
-        body=f"Your payment of ${amount} was successful!",
-        subtype="plain",
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+# async def send_payment_email(user_email: str, amount: float):
+#     """
+#     Sends a payment confirmation email to the user.
+#     :param user_email: The email address of the recipient.
+#     :param amount: The payment amount.
+#     """
+#     message = MessageSchema(
+#         subject="Payment Confirmation",
+#         recipients=[user_email],
+#         body=f"Your payment of ${amount} was successful!",
+#         subtype="plain",
+#     )
+#     fm = FastMail(conf)
+#     await fm.send_message(message)
 
 
-async def send_refund_email(user_email: str, amount: float):
-    """
-    Sends a refund confirmation email to the user.
-    :param user_email: The email address of the recipient.
-    :param amount: The refunded amount.
-    """
-    message = MessageSchema(
-        subject="Refund Processed",
-        recipients=[user_email],
-        body=f"Your refund of ${amount} has been processed successfully.",
-        subtype="plain",
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+# async def send_refund_email(user_email: str, amount: float):
+#     """
+#     Sends a refund confirmation email to the user.
+#     :param user_email: The email address of the recipient.
+#     :param amount: The refunded amount.
+#     """
+#     message = MessageSchema(
+#         subject="Refund Processed",
+#         recipients=[user_email],
+#         body=f"Your refund of ${amount} has been processed successfully.",
+#         subtype="plain",
+#     )
+#     fm = FastMail(conf)
+#     await fm.send_message(message)
 
 
-async def send_cancellation_email(user_email: str, amount: float):
-    """
-    Sends a payment cancellation email to the user.
-    :param user_email: The email address of the recipient.
-    :param amount: The canceled payment amount.
-    """
-    message = MessageSchema(
-        subject="Payment Canceled",
-        recipients=[user_email],
-        body=f"Your payment of ${amount} has been canceled.",
-        subtype="plain",
-    )
-    fm = FastMail(conf)
-    await fm.send_message(message)
+# async def send_cancellation_email(user_email: str, amount: float):
+#     """
+#     Sends a payment cancellation email to the user.
+#     :param user_email: The email address of the recipient.
+#     :param amount: The canceled payment amount.
+#     """
+#     message = MessageSchema(
+#         subject="Payment Canceled",
+#         recipients=[user_email],
+#         body=f"Your payment of ${amount} has been canceled.",
+#         subtype="plain",
+#     )
+#     fm = FastMail(conf)
+#     await fm.send_message(message)
 
 
 @router.post("/payments/", response_model=Payment)

@@ -47,6 +47,9 @@ class BaseAppSettings(BaseModel):
     S3_STORAGE_ACCESS_KEY: str = os.getenv("MINIO_ROOT_USER", "minioadmin")
     S3_STORAGE_SECRET_KEY: str = os.getenv("MINIO_ROOT_PASSWORD", "some_password")
     S3_BUCKET_NAME: str = os.getenv("MINIO_STORAGE", "theater-storage")
+    
+    # STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY")
+    # STRIPE_PUBLIC_KEY: str = os.getenv("STRIPE_PUBLIC_KEY")
 
     @property
     def S3_STORAGE_ENDPOINT(self) -> str:
