@@ -1,7 +1,6 @@
-from typing import Optional, List
 import uuid
-
 from datetime import datetime, timezone
+from typing import List, Optional, TYPE_CHECKING
 
 from sqlalchemy import (
     String,
@@ -15,50 +14,25 @@ from sqlalchemy import (
     Integer,
     Boolean,
     DateTime,
+    func,
 )
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import func
 
-from database import Base
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from database.models.orders import OrderItemModel
-    from database.models.accounts import UserModel
+from . import Base
 
 
 MoviesGenresModel = Table(
     "movies_genres",
     Base.metadata,
-    Column(
-        "movie_id",
-        ForeignKey("movies.id", ondelete="CASCADE"),
-        primary_key=True,
-        nullable=False,
-    ),
-    Column(
-        "genre_id",
-        ForeignKey("genres.id", ondelete="CASCADE"),
-        primary_key=True,
-        nullable=False,
-    ),
+    Column("movie_id", ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+    Column("genre_id", ForeignKey("genres.id", ondelete="CASCADE"), primary_key=True, nullable=False),
 )
 
 StarsMoviesModel = Table(
     "stars_movies",
     Base.metadata,
-    Column(
-        "movie_id",
-        ForeignKey("movies.id", ondelete="CASCADE"),
-        primary_key=True,
-        nullable=False,
-    ),
-    Column(
-        "star_id",
-        ForeignKey("stars.id", ondelete="CASCADE"),
-        primary_key=True,
-        nullable=False,
-    ),
+    Column("movie_id", ForeignKey("movies.id", ondelete="CASCADE"), primary_key=True, nullable=False),
+    Column("star_id", ForeignKey("stars.id", ondelete="CASCADE"), primary_key=True, nullable=False),
 )
 
 MoviesDirectorsModel = Table(
@@ -75,7 +49,7 @@ class GenreModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
+    movies: Mapped[List["MovieModel"]] = relationship(
         "MovieModel", secondary=MoviesGenresModel, back_populates="genres"
     )
 
@@ -89,7 +63,7 @@ class StarModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship("MovieModel", secondary=StarsMoviesModel, back_populates="stars")
+    movies: Mapped[List["MovieModel"]] = relationship("MovieModel", secondary=StarsMoviesModel, back_populates="stars")
 
     def __repr__(self):
         return f"<Star(name='{self.name}')>"
@@ -101,10 +75,8 @@ class DirectorModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
-        "MovieModel",
-        secondary=MoviesDirectorsModel,
-        back_populates="directors",
+    movies: Mapped[List["MovieModel"]] = relationship(
+        "MovieModel", secondary=MoviesDirectorsModel, back_populates="directors"
     )
 
     def __repr__(self):
@@ -117,7 +89,8 @@ class CertificationModel(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
-    movies: Mapped[list["MovieModel"]] = relationship(
+    # Якщо сертифікація використовується лише у фільмах, можна використовувати cascade
+    movies: Mapped[List["MovieModel"]] = relationship(
         "MovieModel", back_populates="certification", cascade="all, delete-orphan"
     )
 
@@ -141,31 +114,32 @@ class MovieModel(Base):
     price: Mapped[float] = mapped_column(DECIMAL(10, 2), nullable=False)
 
     certification_id: Mapped[int] = mapped_column(ForeignKey("certifications.id"), nullable=False)
+    certification: Mapped["CertificationModel"] = relationship("CertificationModel", back_populates="movies")
+
     order_items: Mapped[List["OrderItemModel"]] = relationship("OrderItemModel", back_populates="movie")
 
-    genres: Mapped[list["GenreModel"]] = relationship(
+    genres: Mapped[List["GenreModel"]] = relationship(
         "GenreModel", secondary=MoviesGenresModel, back_populates="movies"
     )
-
-    stars: Mapped[list["StarModel"]] = relationship("StarModel", secondary=StarsMoviesModel, back_populates="movies")
-
-    directors: Mapped[list["DirectorModel"]] = relationship(
+    stars: Mapped[List["StarModel"]] = relationship("StarModel", secondary=StarsMoviesModel, back_populates="movies")
+    directors: Mapped[List["DirectorModel"]] = relationship(
         "DirectorModel", secondary=MoviesDirectorsModel, back_populates="movies"
     )
+
     likes = relationship("MovieLikeModel", back_populates="movie", cascade="all, delete-orphan")
     comments = relationship("MovieCommentModel", back_populates="movie", cascade="all, delete-orphan")
-    ratings: Mapped[List["MovieRatingModel"]] = relationship("MovieRatingModel", back_populates="movie")
-    certification: Mapped["CertificationModel"] = relationship("CertificationModel", back_populates="movies")
+    ratings: Mapped[List["MovieRatingModel"]] = relationship(
+        "MovieRatingModel", back_populates="movie", cascade="all, delete-orphan"
+    )
     favorites = relationship("FavoriteMovieModel", back_populates="movie", cascade="all, delete-orphan")
-    ratings = relationship("MovieRatingModel", back_populates="movie", cascade="all, delete-orphan")
 
     __table_args__ = (UniqueConstraint("name", "year", "time", name="unique_movie_constraint"),)
 
     @property
-    def average_rating(self):
+    def average_rating(self) -> Optional[float]:
         if not self.ratings:
             return None
-        return sum(rating.rating for rating in self.ratings) / len(self.ratings)
+        return sum(r.rating for r in self.ratings) / len(self.ratings)
 
     @classmethod
     def default_order_by(cls):
@@ -196,7 +170,7 @@ class MovieCommentModel(Base):
     movie_id: Mapped[int] = mapped_column(Integer, ForeignKey("movies.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content: Mapped[str] = mapped_column(String(500), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     movie: Mapped["MovieModel"] = relationship("MovieModel", back_populates="comments")
     user: Mapped["UserModel"] = relationship("UserModel", back_populates="comments")
@@ -209,7 +183,7 @@ class MovieCommentModel(Base):
 class FavoriteMovieModel(Base):
     __tablename__ = "favorite_movies"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
 
@@ -223,7 +197,7 @@ class FavoriteMovieModel(Base):
 class MovieRatingModel(Base):
     __tablename__ = "movie_ratings"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     movie_id: Mapped[int] = mapped_column(ForeignKey("movies.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     rating: Mapped[float] = mapped_column(Float, nullable=False)

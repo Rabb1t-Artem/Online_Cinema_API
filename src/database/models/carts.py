@@ -1,14 +1,9 @@
 import datetime
-from typing import List
+from typing import List, TYPE_CHECKING
 from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database import Base
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from database.models.accounts import UserModel
-    from database.models.movies import MovieModel
+from . import Base
 
 
 class CartModel(Base):

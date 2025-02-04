@@ -1,15 +1,9 @@
 from decimal import Decimal
-from typing import List
+from typing import List, TYPE_CHECKING
 from datetime import datetime
 from sqlalchemy import Integer, ForeignKey, String, DECIMAL, DateTime, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from database import Base
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from database.models.accounts import UserModel
-    from database.models.movies import MovieModel
-    from database.models.payments import PaymentModel, PaymentItemModel
+from . import Base
 
 
 class OrderModel(Base):
@@ -29,10 +23,8 @@ class OrderModel(Base):
 
     def __repr__(self):
         return (
-            f"<OrderModel(id={self.id}, "
-            f"user_id={self.user_id}, "
-            f"status={self.status}, "
-            f"total_amount={self.total_amount})>"
+            f"<OrderModel(id={self.id}, user_id={self.user_id}, "
+            f"status={self.status}, total_amount={self.total_amount})>"
         )
 
 
@@ -50,8 +42,6 @@ class OrderItemModel(Base):
 
     def __repr__(self):
         return (
-            f"<OrderItemModel(id={self.id}, "
-            f"order_id={self.order_id}, "
-            f"movie_id={self.movie_id}, "
-            f"price_at_order={self.price_at_order})>"
+            f"<OrderItemModel(id={self.id}, order_id={self.order_id}, "
+            f"movie_id={self.movie_id}, price_at_order={self.price_at_order})>"
         )
