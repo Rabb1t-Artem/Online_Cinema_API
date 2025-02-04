@@ -1,17 +1,11 @@
 from decimal import Decimal
 from datetime import datetime
-from typing import List
+from typing import List, TYPE_CHECKING
 import enum
 
 from sqlalchemy import Integer, ForeignKey, DateTime, Numeric, Enum, String, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-
-from database import Base
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from database.models.orders import OrderModel, OrderItemModel
-    from database.models.accounts import UserModel
+from . import Base
 
 
 class PaymentStatus(enum.Enum):
@@ -33,10 +27,8 @@ class PaymentItemModel(Base):
 
     def __repr__(self):
         return (
-            f"<PaymentItemModel(id={self.id}, "
-            f"payment_id={self.payment_id}, "
-            f"order_item_id={self.order_item_id}, "
-            f"price_at_payment={self.price_at_payment})>"
+            f"<PaymentItemModel(id={self.id}, payment_id={self.payment_id}, "
+            f"order_item_id={self.order_item_id}, price_at_payment={self.price_at_payment})>"
         )
 
 
@@ -54,7 +46,7 @@ class PaymentModel(Base):
     external_payment_id: Mapped[str] = mapped_column(String(255), nullable=True)
 
     order: Mapped["OrderModel"] = relationship("OrderModel", back_populates="payments")
-    user: Mapped["UserModel"] = relationship("UserModel", back_populates="payments")
+    user: Mapped["UserModel"] = relationship(back_populates="payments")
     payment_items: Mapped[List["PaymentItemModel"]] = relationship("PaymentItemModel", back_populates="payment")
 
     def __repr__(self):

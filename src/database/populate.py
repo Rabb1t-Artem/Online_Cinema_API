@@ -43,7 +43,7 @@ from database.models.payments import PaymentStatus, PaymentModel, PaymentItemMod
 
 def generate_random_string(length):
     characters = string.ascii_letters + string.digits
-    random_string = ''.join(choice(characters) for _ in range(length))
+    random_string = "".join(choice(characters) for _ in range(length))
     return random_string
 
 
@@ -204,7 +204,7 @@ class CSVDatabaseSeeder:
 
                 # Обробка інших даних (країни, жанри, актори, режисери тощо)
                 data = self._preprocess_csv()
-                countries = data["country"].unique() # noqa
+                countries = data["country"].unique()  # noqa
                 genres = set(
                     genre.strip() for genres in data["genre"].dropna() for genre in genres.split(",") if genre.strip()
                 )

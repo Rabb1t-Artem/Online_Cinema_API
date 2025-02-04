@@ -1,7 +1,7 @@
 from decimal import Decimal
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
+from .custom_base_model import CustomBaseModel
 from enum import Enum
 
 
@@ -11,17 +11,14 @@ class PaymentStatusEnum(str, Enum):
     refunded = "refunded"
 
 
-class PaymentItem(BaseModel):
+class PaymentItem(CustomBaseModel):
     id: int
     payment_id: int
     order_item_id: int
     price_at_payment: Decimal
 
-    # class Config:
-    #     orm_mode = True
 
-
-class Payment(BaseModel):
+class Payment(CustomBaseModel):
     id: int
     user_id: int
     order_id: int
@@ -32,6 +29,3 @@ class Payment(BaseModel):
     payment_method: Optional[str]
     client_secret: Optional[str]
     payment_items: List[PaymentItem]
-
-    # class Config:
-    #     orm_mode = True
