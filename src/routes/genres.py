@@ -101,25 +101,24 @@ async def create_genre(genre_data: GenreCreateSchema, db: AsyncSession = Depends
     """
     Add a new genre to the database.
     """
-    async with db.begin():
-        existing_genre = await db.execute(select(GenreModel).filter(GenreModel.name == genre_data.name))
-        existing_genre = existing_genre.scalars().first()
+    result = await db.execute(select(GenreModel).filter(GenreModel.name == genre_data.name))
+    existing_genre = result.scalars().first()
 
-        if existing_genre:
+    if existing_genre:
             raise HTTPException(
                 status_code=409,
                 detail=f"A genre with the name '{genre_data.name}' already exists.",
             )
 
-        genre = GenreModel(name=genre_data.name)
-        db.add(genre)
+    genre = GenreModel(name=genre_data.name)
+    db.add(genre)
 
-        try:
-            await db.commit()
-            await db.refresh(genre)
-        except IntegrityError:
-            await db.rollback()
-            raise HTTPException(status_code=400, detail="Invalid input data.")
+    try:
+        await db.commit()
+        await db.refresh(genre)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Invalid input data.")
 
     return GenreDetailSchema.model_validate(genre)
 
