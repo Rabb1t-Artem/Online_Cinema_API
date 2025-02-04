@@ -1,4 +1,3 @@
-from pydantic import ConfigDict
 from typing import List, Optional
 
 from schemas.custom_base_model import CustomBaseModel
@@ -28,9 +27,9 @@ class GenreListResponseSchema(CustomBaseModel):
 class GenreDetailSchema(CustomBaseModel):
     id: int
     name: str
-    movie_count: int
+    movie_count: Optional[int] = None
 
 
 class GenreCountSchema(CustomBaseModel):
     genre_name: str
-    movie_count: int
+    movie_count: Optional[int] = None
