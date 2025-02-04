@@ -5,10 +5,10 @@ from routes import accounts_router, profiles_router, movie_router, cart_router
 
 app = FastAPI(title="Movies homework", description="Description of project")
 
-app.include_router(accounts_router, prefix=f"/accounts", tags=["accounts"])
-app.include_router(profiles_router, prefix=f"/profiles", tags=["profiles"])
-app.include_router(movie_router, prefix=f"")
-app.include_router(cart_router, prefix=f"/cart")
+app.include_router(accounts_router, prefix="/accounts", tags=["accounts"])
+app.include_router(profiles_router, prefix="/profiles", tags=["profiles"])
+app.include_router(movie_router, prefix="")
+app.include_router(cart_router, prefix="/cart")
 
 
 if __name__ == "__main__":
