@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import delete
 from notifications import EmailSender
+from sqlalchemy.orm import selectinload
 
 from config import (
     get_jwt_auth_manager,
@@ -175,6 +176,7 @@ async def activate_account(
     """
     result = await db.execute(
         select(ActivationTokenModel)
+        .options(selectinload(ActivationTokenModel.user))  # Eager-loading user
         .join(UserModel)
         .where(
             UserModel.email == activation_data.email,
@@ -215,7 +217,7 @@ async def activate_account(
 
 
 @router.post(
-    "change-password/",
+    "/change-password/",
     response_model=MessageResponseSchema,
     summary="Change Password",
     description="Change the password for a user's account.",
@@ -237,7 +239,7 @@ async def change_password(
             detail="User does not exist.",
         )
 
-    if not pwd_context.verify(change_password_data.old_password, user.password):
+    if not pwd_context.verify(change_password_data.old_password, user._hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Old password is incorrect.",
@@ -253,7 +255,7 @@ async def change_password(
 
     hashed_new_password = pwd_context.hash(change_password_data.new_password)
 
-    user.password = hashed_new_password
+    user._hashed_password = hashed_new_password
     await db.commit()
 
     return MessageResponseSchema(message="Password changed successfully.")
