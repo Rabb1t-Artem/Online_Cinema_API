@@ -1,4 +1,3 @@
-from pydantic import ConfigDict
 from typing import List, Optional
 
 from schemas.custom_base_model import CustomBaseModel
