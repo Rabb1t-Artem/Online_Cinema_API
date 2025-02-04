@@ -346,6 +346,18 @@ async def update_movie(
     await db.commit()
     await db.refresh(movie)
 
+    result = await db.execute(
+        select(MovieModel)
+        .options(
+            selectinload(MovieModel.directors),
+            selectinload(MovieModel.genres),
+            selectinload(MovieModel.stars),
+            selectinload(MovieModel.certification)
+        )
+        .filter(MovieModel.id == movie.id)
+    )
+    movie = result.scalars().first()
+
     return MovieDetailSchema.model_validate(movie)
 
 
