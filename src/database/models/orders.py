@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import List, TYPE_CHECKING
+from typing import List
 from datetime import datetime
 from sqlalchemy import Integer, ForeignKey, String, DECIMAL, DateTime, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column

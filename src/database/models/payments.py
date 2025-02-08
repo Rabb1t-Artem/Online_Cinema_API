@@ -1,6 +1,6 @@
 from decimal import Decimal
 from datetime import datetime
-from typing import List, TYPE_CHECKING
+from typing import List
 import enum
 
 from sqlalchemy import Integer, ForeignKey, DateTime, Numeric, Enum, String, func

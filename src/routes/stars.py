@@ -127,7 +127,7 @@ async def create_star(star_data: StarCreateSchema, db: AsyncSession = Depends(ge
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         }
     },
-    tags=["Stats", "ID_find"],
+    tags=["Stars", "ID_search"],
 )
 async def get_star_by_id(
     star_id: int,

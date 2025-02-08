@@ -87,39 +87,3 @@ class MovieUpdateSchema(CustomBaseModel):
     gross: float | None = Field(None, ge=0)
     description: str | None = None
     price: float | None = Field(None, ge=0)
-
-
-class MovieLikeSchema(CustomBaseModel):
-    movie_id: int
-    is_liked: bool = False
-
-
-class MovieCommentCreateSchema(CustomBaseModel):
-    content: str
-
-
-class MovieCommentSchema(MovieCommentCreateSchema):
-    id: int
-    user_id: int
-    created_at: datetime
-
-
-class FavoriteMovieSchema(CustomBaseModel):
-    user_id: int
-    movie_id: int
-
-
-class FavoriteMovieResponseSchema(CustomBaseModel):
-    message: str
-
-
-class FavoriteMovieListSchema(CustomBaseModel):
-    movies: List[MovieDetailSchema]
-
-
-class NotificationSchema(CustomBaseModel):
-    id: int
-    user_id: int
-    message: str
-    is_read: bool
-    created_at: datetime

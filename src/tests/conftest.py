@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
 
 from config.dependencies import get_settings
-from database.session_test import get_test_db, reset_test_database, TestSessionLocal
+from database.session_test import get_test_db, reset_test_database, TestSessionLocal, delete_test_database
 from database import get_db
 from database.models.accounts import UserModel, UserGroupModel, UserGroupEnum
 from database.populate import CSVDatabaseSeeder
@@ -19,27 +19,33 @@ import pytest
 
 pytest_plugins = "pytest_asyncio"
 
+
 def pytest_configure():
     pytest.asyncio_mode = "auto"
 
 
-# Event loop for async tests
 @pytest.fixture(scope="session")
 def event_loop():
+    """Event loop for async tests"""
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
 
-# Clear test DB before testing
-@pytest_asyncio.fixture(scope="session", autouse=True)
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionfinish(session, exitstatus):
+    asyncio.run(delete_test_database())
+
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
 async def setup_test_db():
+    """Clear test DB before testing"""
     await reset_test_database()
 
 
-# Override get_db to get_test_db
 @pytest.fixture(scope="function")
 def app_with_test_db():
+    """Override get_db to get_test_db"""
     app.dependency_overrides[get_db] = get_test_db
     yield app
     app.dependency_overrides.clear()
@@ -54,16 +60,16 @@ async def async_client(app_with_test_db):
         yield client
 
 
-# Async session DB for test
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncSession:
+    """Async session DB for test"""
     async with TestSessionLocal() as session:
         yield session
 
 
-# JWT manager
 @pytest.fixture(scope="function")
 def jwt_manager():
+    """JWT manager"""
     settings = get_settings()
     return JWTAuthManager(
         secret_key_access=settings.SECRET_KEY_ACCESS,
@@ -72,18 +78,18 @@ def jwt_manager():
     )
 
 
-# Fixture for User Groups
 @pytest_asyncio.fixture(scope="function")
 async def seed_user_groups(db_session: AsyncSession):
+    """Fixture for User Groups"""
     groups = [{"name": group.value} for group in UserGroupEnum]
     await db_session.execute(insert(UserGroupModel).values(groups))
     await db_session.commit()
     yield db_session
 
 
-# Preparing test data
 @pytest_asyncio.fixture(scope="function")
 async def seed_database(db_session: AsyncSession):
+    """Preparing test data"""
     settings = get_settings()
     seeder = CSVDatabaseSeeder(csv_file_path=settings.PATH_TO_MOVIES_CSV, db_session=db_session)
     if not await seeder.is_db_populated():
@@ -91,19 +97,20 @@ async def seed_database(db_session: AsyncSession):
     yield db_session
 
 
-# Test user fixture
 @pytest_asyncio.fixture(scope="function")
 async def create_test_user(db_session: AsyncSession):
+    """Test user fixture"""
     user = UserModel(email="testuser@example.com", group_id=1)
+    user.password = "Testpassword123!"
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)
     return user
 
 
-# Mock services
 @pytest.fixture(scope="function")
 def email_sender_stub():
+    """Mock services"""
     return StubEmailSender()
 
 

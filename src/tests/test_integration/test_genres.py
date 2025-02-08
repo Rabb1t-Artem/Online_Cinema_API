@@ -17,11 +17,13 @@ async def test_create_genre(async_client: AsyncClient, db_session: AsyncSession)
     genre = genre.scalars().first()
     assert genre is not None
 
+
 @pytest.mark.asyncio
 async def test_get_genre_list_empty(async_client: AsyncClient):
-    response = await async_client.get("/genres")
+    response = await async_client.get("/genres/")
     assert response.status_code == 404
     assert response.json()["detail"] == "No genres found."
+
 
 @pytest.mark.asyncio
 async def test_get_genre_by_id(async_client: AsyncClient, db_session: AsyncSession):
@@ -36,6 +38,7 @@ async def test_get_genre_by_id(async_client: AsyncClient, db_session: AsyncSessi
     data = response.json()
     assert data["name"] == "Comedy"
 
+
 @pytest.mark.asyncio
 async def test_delete_genre(async_client: AsyncClient, db_session: AsyncSession):
     genre = GenreModel(name="Drama")
@@ -49,6 +52,7 @@ async def test_delete_genre(async_client: AsyncClient, db_session: AsyncSession)
     deleted_genre = await db_session.execute(select(GenreModel).filter(GenreModel.id == genre.id))
     deleted_genre = deleted_genre.scalars().first()
     assert deleted_genre is None
+
 
 @pytest.mark.asyncio
 async def test_update_genre(async_client: AsyncClient, db_session: AsyncSession):
@@ -70,6 +74,7 @@ async def test_update_genre(async_client: AsyncClient, db_session: AsyncSession)
     updated_genre = updated_genre.scalars().first()
     assert updated_genre.name == "Suspense"
 
+
 @pytest.mark.asyncio
 async def test_get_movies_by_genre(async_client: AsyncClient, db_session: AsyncSession):
     genre = GenreModel(name="Action")
@@ -90,7 +95,7 @@ async def test_get_movies_by_genre(async_client: AsyncClient, db_session: AsyncS
         description="Action packed superhero movie.",
         price=14.99,
         certification_id=certification.id,
-        genres=[genre]
+        genres=[genre],
     )
     db_session.add(movie)
     await db_session.commit()

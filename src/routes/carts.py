@@ -40,7 +40,7 @@ async def get_cart_by_user(user_id: int, db: AsyncSession) -> CartModel:
 async def view_cart(
     token: str = Depends(get_token),
     db: AsyncSession = Depends(get_db),
-    jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
+    jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager),
 ) -> CartResponseSchema:
     """Get the contents of the user's cart."""
     user_data = jwt_manager.decode_access_token(token)
