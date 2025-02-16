@@ -50,7 +50,7 @@ async def view_cart(
     token: str = Depends(get_token),
     db: AsyncSession = Depends(get_db),
     # jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
-    settings: Settings = Depends(get_settings)
+    settings: Settings = Depends(get_settings),
 ) -> CartResponseSchema:
     """Get the contents of the user's cart."""
     payload = JWTAuthManager(
@@ -94,7 +94,9 @@ async def add_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_
             raise HTTPException(status_code=400, detail="You have already purchased this movie")
 
         # async with db.begin():
-        cart_item = CartItemModel(cart_id=cart.id, movie_id=movie_id, added_at=datetime.now(timezone.utc).replace(tzinfo=None))
+        cart_item = CartItemModel(
+            cart_id=cart.id, movie_id=movie_id, added_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        )
         db.add(cart_item)
         # await db.flush()
         await db.commit()

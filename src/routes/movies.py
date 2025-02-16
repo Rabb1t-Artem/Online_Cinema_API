@@ -141,9 +141,7 @@ async def create_movie(
     try:
         directors = []
         for director_item in movie_data.directors:
-            result_director = await db.execute(
-                select(DirectorModel).filter(DirectorModel.name == director_item.name)
-            )
+            result_director = await db.execute(select(DirectorModel).filter(DirectorModel.name == director_item.name))
             director = result_director.scalar_one_or_none()
             if not director:
                 director = DirectorModel(name=director_item.name)
@@ -206,7 +204,7 @@ async def create_movie(
                 selectinload(MovieModel.directors),
                 selectinload(MovieModel.genres),
                 selectinload(MovieModel.stars),
-                selectinload(MovieModel.certification)
+                selectinload(MovieModel.certification),
             )
             .filter(MovieModel.id == movie.id)
         )
@@ -352,7 +350,7 @@ async def update_movie(
             selectinload(MovieModel.directors),
             selectinload(MovieModel.genres),
             selectinload(MovieModel.stars),
-            selectinload(MovieModel.certification)
+            selectinload(MovieModel.certification),
         )
         .filter(MovieModel.id == movie.id)
     )

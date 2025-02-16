@@ -1,7 +1,16 @@
 import uvicorn
 from fastapi import FastAPI
 
-from routes import accounts_router, profiles_router, movie_router, cart_router, payment_router, genre_router, star_router, order_router
+from routes import (
+    accounts_router,
+    profiles_router,
+    movie_router,
+    cart_router,
+    payment_router,
+    genre_router,
+    star_router,
+    order_router,
+)
 
 app = FastAPI(title="Movies homework", description="Description of project")
 
