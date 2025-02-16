@@ -14,6 +14,7 @@ from security.interfaces import JWTAuthManagerInterface
 from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
 from security.http import get_token
+from sqlalchemy.orm import joinedload, selectinload
 
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
@@ -68,7 +69,7 @@ async def get_current_user(token: str = Depends(get_token), settings: Settings =
     from database import get_db
     from database.models.accounts import UserModel
 
-    db: AsyncSession = await asyncio.anext(get_db())
+    db: AsyncSession = await anext(get_db())
     try:
         payload = JWTAuthManager(
             secret_key_access=settings.SECRET_KEY_ACCESS,
@@ -80,7 +81,7 @@ async def get_current_user(token: str = Depends(get_token), settings: Settings =
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
-        result = await db.execute(select(UserModel).filter(UserModel.id == user_id))
+        result = await db.execute(select(UserModel).options(selectinload(UserModel.group)).filter(UserModel.id == user_id))
         user = result.scalars().first()
 
         if user is None:

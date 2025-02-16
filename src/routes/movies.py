@@ -424,31 +424,31 @@ async def get_movie_likes(movie_id: int, db: AsyncSession = Depends(get_db)):
     return {"movie_id": movie_id, "likes": likes_count, "dislikes": dislikes_count}
 
 
-# @router.post(
-#     "/movies/{movie_id}/comments/",
-#     response_model=MovieCommentSchema,
-#     tags=["Movies", "Comments"],
-# )
-# async def add_comment(
-#     movie_id: int,
-#     comment_data: MovieCommentCreateSchema,
-#     db: AsyncSession = Depends(get_db),
-#     current_user: UserModel = Depends(get_current_user),
-# ):
-#     """
-#     Asynchronously add a comment to a movie.
-#     """
-#     result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
-#     movie = result.scalars().first()
-#     if not movie:
-#         raise HTTPException(status_code=404, detail="Movie not found.")
-#
-#     comment = MovieCommentModel(movie_id=movie_id, user_id=current_user.id, content=comment_data.content)
-#     db.add(comment)
-#     await db.commit()
-#     await db.refresh(comment)
-#
-#     return comment
+@router.post(
+    "/movies/{movie_id}/comments/",
+    response_model=MovieCommentSchema,
+    tags=["Movies", "Comments"],
+)
+async def add_comment(
+    movie_id: int,
+    comment_data: MovieCommentCreateSchema,
+    db: AsyncSession = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Asynchronously add a comment to a movie.
+    """
+    result = await db.execute(select(MovieModel).filter(MovieModel.id == movie_id))
+    movie = result.scalars().first()
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found.")
+
+    comment = MovieCommentModel(movie_id=movie_id, user_id=current_user.id, content=comment_data.content)
+    db.add(comment)
+    await db.commit()
+    await db.refresh(comment)
+
+    return comment
 
 
 @router.get(

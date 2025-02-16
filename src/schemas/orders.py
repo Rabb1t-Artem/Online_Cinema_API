@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import Optional
+from datetime import datetime
 
 from typing import List
 
@@ -14,7 +15,7 @@ class OrderItemResponseSchema(CustomBaseModel):
 class OrderResponseSchema(CustomBaseModel):
     id: int
     user_id: int
-    created_at: str
+    created_at: datetime
     status: str
     total_amount: Decimal
     items: List[OrderItemResponseSchema]
@@ -26,7 +27,7 @@ class OrderWithMoviesResponseSchema(CustomBaseModel):
     created_at: str
     status: str
     total_amount: Decimal
-    movies: List[str]  # Тут буде список назв фільмів
+    movies: List[str]
 
 
 class OrderListResponseSchema(CustomBaseModel):

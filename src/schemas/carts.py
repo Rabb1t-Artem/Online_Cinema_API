@@ -4,12 +4,13 @@ from typing import List, Optional
 from pydantic import Field, ConfigDict, model_validator
 
 from schemas.custom_base_model import CustomBaseModel
+from schemas.genres import GenreSchema
 
 
 class MovieInCartSchema(CustomBaseModel):
     id: int
     name: str
-    genres: List[str]
+    genres: List[GenreSchema]
     price: float = Field(..., ge=0)
 
     date: Optional[date] = None
