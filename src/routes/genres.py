@@ -95,7 +95,7 @@ async def get_genre_list(
         },
     },
     status_code=status.HTTP_201_CREATED,
-    tags=["Genres", "Create"],
+    tags=["Genres"],
 )
 async def create_genre(genre_data: GenreCreateSchema, db: AsyncSession = Depends(get_db)) -> GenreDetailSchema:
     """
@@ -137,7 +137,7 @@ async def create_genre(genre_data: GenreCreateSchema, db: AsyncSession = Depends
             "content": {"application/json": {"example": {"detail": "Genre with the given ID was not found."}}},
         }
     },
-    tags=["Genres", "ID_search"],
+    tags=["Genres"],
 )
 async def get_genre_by_id(
     genre_id: int,
@@ -171,7 +171,7 @@ async def get_genre_by_id(
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Genres", "Delete"],
+    tags=["Genres"],
 )
 async def delete_genre(
     genre_id: int,
@@ -210,7 +210,7 @@ async def delete_genre(
             "content": {"application/json": {"example": {"detail": "Genre with the given ID was not found."}}},
         },
     },
-    tags=["Genres", "Update"],
+    tags=["Genres"],
 )
 async def update_genre(
     genre_id: int,
@@ -238,7 +238,7 @@ async def update_genre(
 @router.get(
     "/genres/{genre_id}/movies/",
     summary="Get movies by genre",
-    tags=["Genres", "Movies"],
+    tags=["Genres"],
 )
 async def get_movies_by_genre(genre_id: int, db: AsyncSession = Depends(get_db)):
     """
