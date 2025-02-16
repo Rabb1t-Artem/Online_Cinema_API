@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+
+# from fastapi.security import OAuth2PasswordBearer
 
 from config.settings import TestingSettings, Settings, BaseAppSettings
 from notifications import EmailSenderInterface, EmailSender
@@ -14,13 +15,8 @@ from security.token_manager import JWTAuthManager
 from storages import S3StorageInterface, S3StorageClient
 from security.http import get_token
 
+
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/")
-
-
-# def get_db():
-#     from database.session_sqlite import get_sqlite_db
-
-#     return get_sqlite_db()
 
 
 def get_settings() -> BaseAppSettings:
@@ -68,7 +64,7 @@ def get_s3_storage_client(
     )
 
 
-async def get_current_user(token: str = Depends(get_token), settings: Settings = Depends()):
+async def get_current_user(token: str = Depends(get_token), settings: Settings = Depends(get_settings)):
     from database import get_db
     from database.models.accounts import UserModel
 

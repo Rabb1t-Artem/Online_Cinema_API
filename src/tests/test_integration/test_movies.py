@@ -4,11 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.models.movies import MovieModel, CertificationModel
 
+
 @pytest.mark.asyncio
 async def test_get_movie_list_empty(async_client: AsyncClient):
     response = await async_client.get("/movies/")
     assert response.status_code == 404
     assert response.json()["detail"] == "No movies found."
+
 
 @pytest.mark.asyncio
 async def test_create_movie(async_client: AsyncClient, db_session: AsyncSession):
@@ -26,7 +28,7 @@ async def test_create_movie(async_client: AsyncClient, db_session: AsyncSession)
         "directors": [{"id": 1, "name": "John"}],
         "certification_id": {"id": 1, "name": "PG-13"},
         "genres": [{"id": 1, "name": "horror"}, {"id": 2, "name": "horror"}],
-        "stars": [{"id": 1, "name": "Anton"}, {"id": 2, "name": "Mike"}]
+        "stars": [{"id": 1, "name": "Anton"}, {"id": 2, "name": "Mike"}],
     }
     response = await async_client.post("/movies/", json=movie_data)
     assert response.status_code == 201, response.json()
@@ -38,6 +40,7 @@ async def test_create_movie(async_client: AsyncClient, db_session: AsyncSession)
     movie = await db_session.execute(select(MovieModel).filter(MovieModel.name == "Inception"))
     movie = movie.scalars().first()
     assert movie is not None
+
 
 @pytest.mark.asyncio
 async def test_get_movie_by_id(async_client: AsyncClient, db_session: AsyncSession):
@@ -56,7 +59,7 @@ async def test_get_movie_by_id(async_client: AsyncClient, db_session: AsyncSessi
         gross=2787965087,
         description="A marine on an alien planet.",
         price=12.99,
-        certification_id=certification.id
+        certification_id=certification.id,
     )
     db_session.add(movie)
     await db_session.commit()
@@ -67,6 +70,7 @@ async def test_get_movie_by_id(async_client: AsyncClient, db_session: AsyncSessi
     data = response.json()
     assert data["name"] == "Avatar"
     assert data["year"] == 2009
+
 
 @pytest.mark.asyncio
 async def test_delete_movie(async_client: AsyncClient, db_session: AsyncSession):
@@ -85,7 +89,7 @@ async def test_delete_movie(async_client: AsyncClient, db_session: AsyncSession)
         gross=463517383,
         description="A hacker learns about the true nature of reality.",
         price=9.99,
-        certification_id=certification.id
+        certification_id=certification.id,
     )
     db_session.add(movie)
     await db_session.commit()

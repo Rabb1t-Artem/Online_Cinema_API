@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -5,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import delete
 from datetime import datetime, timezone
 from security.http import get_token
-from security.interfaces import JWTAuthManagerInterface
+from security.token_manager import JWTAuthManager
 from config import get_jwt_auth_manager
 
 from database.models.orders import OrderItemModel, OrderModel
@@ -13,8 +15,16 @@ from database import get_db
 from database.models.carts import CartModel, CartItemModel
 from database.models.movies import MovieModel
 from schemas.carts import CartResponseSchema, CartItemResponseSchema
+from config.settings import TestingSettings, Settings, BaseAppSettings
 
 cart_router = APIRouter(prefix="/cart", tags=["Cart"])
+
+
+def get_settings() -> BaseAppSettings:
+    environment = os.getenv("ENVIRONMENT", "developing")
+    if environment == "testing":
+        return TestingSettings()
+    return Settings()
 
 
 async def get_cart_by_user(user_id: int, db: AsyncSession) -> CartModel:
@@ -27,11 +37,10 @@ async def get_cart_by_user(user_id: int, db: AsyncSession) -> CartModel:
     cart = result.scalars().first()
 
     if not cart:
-        async with db.begin():
-            cart = CartModel(user_id=user_id)
-            db.add(cart)
-            await db.flush()
-            await db.refresh(cart)
+        cart = CartModel(user_id=user_id)
+        db.add(cart)
+        await db.commit()
+        await db.refresh(cart)
 
     return cart
 
@@ -40,11 +49,18 @@ async def get_cart_by_user(user_id: int, db: AsyncSession) -> CartModel:
 async def view_cart(
     token: str = Depends(get_token),
     db: AsyncSession = Depends(get_db),
-    jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
+    # jwt_manager: JWTAuthManagerInterface = Depends(get_jwt_auth_manager)
+    settings: Settings = Depends(get_settings),
 ) -> CartResponseSchema:
     """Get the contents of the user's cart."""
-    user_data = jwt_manager.decode_access_token(token)
-    user_id = user_data.get("user_id")
+    payload = JWTAuthManager(
+        secret_key_access=settings.SECRET_KEY_ACCESS,
+        secret_key_refresh=settings.SECRET_KEY_REFRESH,
+        algorithm=settings.JWT_SIGNING_ALGORITHM,
+    ).decode_access_token(token)
+    user_id = payload.get("user_id")
+    # user_data = jwt_manager.decode_access_token(token)
+    # user_id = user_data.get("user_id")
     cart = await get_cart_by_user(user_id, db)
 
     if not cart.cart_items:
@@ -53,7 +69,7 @@ async def view_cart(
     return CartResponseSchema.model_validate(cart)
 
 
-@cart_router.post("/{movie_id}/add", response_model=CartItemResponseSchema)
+@cart_router.post("/{user_id}/{movie_id}/add", response_model=CartItemResponseSchema)
 async def add_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_db)) -> CartItemResponseSchema:
     """Add a movie to the user's cart, ensuring it's not already purchased."""
     try:
@@ -77,11 +93,14 @@ async def add_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_
         if purchased_movie.scalars().first():
             raise HTTPException(status_code=400, detail="You have already purchased this movie")
 
-        async with db.begin():
-            cart_item = CartItemModel(cart_id=cart.id, movie_id=movie_id, added_at=datetime.now(timezone.utc))
-            db.add(cart_item)
-            await db.flush()
-            await db.refresh(cart_item)
+        # async with db.begin():
+        cart_item = CartItemModel(
+            cart_id=cart.id, movie_id=movie_id, added_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        )
+        db.add(cart_item)
+        # await db.flush()
+        await db.commit()
+        await db.refresh(cart_item)
 
         return CartItemResponseSchema.model_validate(cart_item)
 
@@ -91,7 +110,7 @@ async def add_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
-@cart_router.delete("/{movie_id}/remove")
+@cart_router.delete("/{user_id}/{movie_id}/remove")
 async def remove_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(get_db)):
     """Remove a movie from the user's cart and log the event."""
 
@@ -104,8 +123,9 @@ async def remove_movie(user_id: int, movie_id: int, db: AsyncSession = Depends(g
         if not cart_item:
             raise HTTPException(status_code=404, detail="Movie is not in the cart")
 
-        async with db.begin():
-            await db.execute(delete(CartItemModel).where(CartItemModel.id == cart_item.id))
+        # async with db.begin():
+        await db.execute(delete(CartItemModel).where(CartItemModel.id == cart_item.id))
+        await db.commit()
 
         print(f"Moderator Alert: User {user_id} removed movie {movie_id} from their cart.")
 

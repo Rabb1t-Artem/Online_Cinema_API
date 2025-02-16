@@ -37,8 +37,9 @@ async def test_create_order(async_client: AsyncClient, create_test_user, create_
 
 
 @pytest.mark.asyncio
-async def test_get_order_by_id(async_client: AsyncClient, create_test_user, create_test_movie,
-                               db_session: AsyncSession):
+async def test_get_order_by_id(
+    async_client: AsyncClient, create_test_user, create_test_movie, db_session: AsyncSession
+):
     """
     Test retrieving an order by its ID.
     Ensures that users can retrieve order details correctly.
@@ -80,8 +81,9 @@ async def test_get_orders_list_admin(async_client: AsyncClient, create_test_user
         db_session.add(order)
         await db_session.commit()
 
-    response = await async_client.get("/orders?page=1&per_page=10",
-                                      headers={"Authorization": "Bearer fake-admin-token"})
+    response = await async_client.get(
+        "/orders?page=1&per_page=10", headers={"Authorization": "Bearer fake-admin-token"}
+    )
 
     assert response.status_code == 200
     data = response.json()

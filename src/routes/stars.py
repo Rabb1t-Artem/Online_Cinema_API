@@ -87,7 +87,7 @@ async def get_star_list(
         },
     },
     status_code=status.HTTP_201_CREATED,
-    tags=["Stars", "Create"],
+    tags=["Stars"],
 )
 async def create_star(star_data: StarCreateSchema, db: AsyncSession = Depends(get_db)) -> StarDetailSchema:
     """
@@ -127,7 +127,7 @@ async def create_star(star_data: StarCreateSchema, db: AsyncSession = Depends(ge
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         }
     },
-    tags=["Stats", "ID_find"],
+    tags=["Stats"],
 )
 async def get_star_by_id(
     star_id: int,
@@ -161,7 +161,7 @@ async def get_star_by_id(
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Stars", "Delete"],
+    tags=["Stars"],
 )
 async def delete_star(
     star_id: int,
@@ -200,7 +200,7 @@ async def delete_star(
             "content": {"application/json": {"example": {"detail": "Star with the given ID was not found."}}},
         },
     },
-    tags=["Stars", "Update"],
+    tags=["Stars"],
 )
 async def update_star(
     star_id: int,

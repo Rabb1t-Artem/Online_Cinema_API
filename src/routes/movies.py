@@ -59,7 +59,7 @@ router = APIRouter()
             "content": {"application/json": {"example": {"detail": "No movies found."}}},
         }
     },
-    tags=["Movies", "All"],
+    tags=["Movies"],
 )
 async def get_movie_list(
     page: int = Query(1, ge=1, description="Page number (1-based index)"),
@@ -115,7 +115,7 @@ async def get_movie_list(
         },
     },
     status_code=status.HTTP_201_CREATED,
-    tags=["Movies", "Create"],
+    tags=["Movies"],
 )
 async def create_movie(
     movie_data: MovieCreateSchema,
@@ -141,9 +141,7 @@ async def create_movie(
     try:
         directors = []
         for director_item in movie_data.directors:
-            result_director = await db.execute(
-                select(DirectorModel).filter(DirectorModel.name == director_item.name)
-            )
+            result_director = await db.execute(select(DirectorModel).filter(DirectorModel.name == director_item.name))
             director = result_director.scalar_one_or_none()
             if not director:
                 director = DirectorModel(name=director_item.name)
@@ -206,7 +204,7 @@ async def create_movie(
                 selectinload(MovieModel.directors),
                 selectinload(MovieModel.genres),
                 selectinload(MovieModel.stars),
-                selectinload(MovieModel.certification)
+                selectinload(MovieModel.certification),
             )
             .filter(MovieModel.id == movie.id)
         )
@@ -234,7 +232,7 @@ async def create_movie(
             "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         }
     },
-    tags=["Movies", "ID_search"],
+    tags=["Movies"],
 )
 async def get_movie_by_id(
     movie_id: int,
@@ -278,7 +276,7 @@ async def get_movie_by_id(
         },
     },
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Movies", "Delete"],
+    tags=["Movies"],
 )
 async def delete_movie(
     movie_id: int,
@@ -324,7 +322,7 @@ async def delete_movie(
             "content": {"application/json": {"example": {"detail": "Movie with the given ID was not found."}}},
         },
     },
-    tags=["Movies", "Update"],
+    tags=["Movies"],
 )
 async def update_movie(
     movie_id: int,
@@ -352,7 +350,7 @@ async def update_movie(
             selectinload(MovieModel.directors),
             selectinload(MovieModel.genres),
             selectinload(MovieModel.stars),
-            selectinload(MovieModel.certification)
+            selectinload(MovieModel.certification),
         )
         .filter(MovieModel.id == movie.id)
     )
@@ -365,7 +363,7 @@ async def update_movie(
     "/movies/{movie_id}/like/",
     summary="Like or dislike a movie",
     response_model=MovieLikeSchema,
-    tags=["Movies", "Likes"],
+    tags=["Movies"],
 )
 async def like_movie(
     movie_id: int,
@@ -404,7 +402,7 @@ async def like_movie(
 @router.get(
     "/movies/{movie_id}/likes/",
     summary="Get like/dislike count for a movie",
-    tags=["Movies", "Likes"],
+    tags=["Movies"],
 )
 async def get_movie_likes(movie_id: int, db: AsyncSession = Depends(get_db)):
     """
