@@ -101,7 +101,7 @@ class MovieCommentCreateSchema(CustomBaseModel):
 class MovieCommentSchema(MovieCommentCreateSchema):
     id: int
     user_id: int
-    created_at: datetime
+    created_at: datetime | None
 
 
 class FavoriteMovieSchema(CustomBaseModel):
